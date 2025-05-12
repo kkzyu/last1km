@@ -1,39 +1,36 @@
-# web_dev_template
+# [学士配送和] - Axure 交互原型 
 
-#### 介绍
-{**以下是 Gitee 平台说明，您可以替换此简介**
-Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用 Gitee 实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+### Attention：文件需要在Axure11中打开才能正常显示
 
-#### 软件架构
-软件架构说明
+## 项目简介
 
+本项目是 [学士配送] 的交互原型，旨在演示核心用户流程和主要功能交互。
 
-#### 安装教程
+## 原型访问
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+*使用 Axure 11 打开 `原型设计.rp` 文件*
 
-#### 使用说明
+## 如何开始
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+* **基本操作:** 您可以通过鼠标点击原型中的元素进行交互。目前导航栏以及网页核心功能部分已支持交互
+* **导航:**
+    * 位于页面底部
+    * 您可以从“首页”页面开始体验核心功能。
+* **推荐环境:** 建议使用最新版本的 Chrome 或 Firefox 浏览器在桌面端查看，以获得最佳体验。
 
-#### 参与贡献
+## 原型功能范围
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+**已实现功能:**
 
+* 用户登录与注册
+* 委托添加与历史委托查看
+* 送货员消息界面与送货员主页查看
+* 个人信息界面
 
-#### 特技
+**未实现功能:**
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+* 在线支付流程
+* 数据的输入与删除
+* 用户个人中心编辑功能
+* 部分筛选条件可能尚未生效
+* 其他需要后端与数据库配合的功能
