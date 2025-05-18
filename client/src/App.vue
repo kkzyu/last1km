@@ -1,7 +1,11 @@
 <script setup>
-import HomeView from './views/HomeView.vue'
+import { RouterView } from 'vue-router'
+import BottomNav from '@/components/BottomNav.vue'
+import TopHead from '@/components/TopHead.vue'
 </script>
 
 <template>
-  <HomeView />
+  <TopHead />
+  <RouterView />
+  <BottomNav />
 </template>
