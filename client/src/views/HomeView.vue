@@ -14,7 +14,7 @@
 import { ref, onMounted, computed } from 'vue'
 import information from '@/assets/information.json'
 import HomeCarousel from '@/components/HomeCarousel.vue'
-import OrderHistory from '@/components/OrderHistory.vue'
+import OrderHistory from '@/components/HomeOrderhistory.vue'
 
 // 状态管理
 const activeTab = ref('home')

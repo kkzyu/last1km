@@ -10,7 +10,7 @@ const routes = [
   {
     path: '/orders',
     name: 'orders',
-    component: () => import('@/views/OrderView.vue')
+    component: () => import('@/views/InformationView.vue')
   },
   {
     path: '/profile',
