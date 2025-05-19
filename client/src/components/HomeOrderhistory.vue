@@ -25,9 +25,18 @@
             'completed': order.status === '已完成'
           }"
         >
+          <div class="order-image">
+            <img 
+              :src="order.image" 
+              alt="订单图片"
+              v-if="order.image"
+            >
+            <div v-else class="image-placeholder">暂无图片</div>
+          </div>
+
           <div class="order-details">
             <div class="order-status">{{ order.status }}</div>
-            <p>订单号：{{ order.id }}</p>
+            <p class="order-id">订单号：{{ order.id }}</p>
             <p>{{ order.from }} → {{ order.to }}</p>
             <p>速递物品：{{ order.item }}</p>
             <p v-if="order.eta">
@@ -77,9 +86,9 @@ const emit = defineEmits(['publish', 'cancel', 'review'])
 .history-orders {
   padding: 15px;
   flex: 1;
-  overflow-y: auto;
-  height: 0;
-  padding-bottom: 55px;
+  overflow-y: auto; 
+  height: 0;  
+  padding-bottom: 55px; 
 }
 
 .order-list .order-item:last-child {
@@ -127,6 +136,28 @@ const emit = defineEmits(['publish', 'cancel', 'review'])
   font-weight: 600;
   margin-bottom: 8px;
   letter-spacing: 0.5px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif; /* 更优雅的字体 */
+}
+
+.order-item p {
+  font-size: 0.9em;
+  color: #333;
+  margin: 5px 0;
+  line-height: 1.4; /* 增加行高提升可读性 */
+  letter-spacing: 0.3px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif; /* 统一字体 */
+  font-weight: 400; /* 标准字重 */
+}
+
+.order-item p span {
+  color: #E91E63;
+  font-weight: 600; /* 加粗强调 */
+  font-family: inherit; /* 继承父元素字体 */
+}
+
+.order-details {
+  flex: 1;
+  min-width: 0; 
 }
 
 .order-item p {
@@ -135,6 +166,10 @@ const emit = defineEmits(['publish', 'cancel', 'review'])
   margin: 5px 0;
   line-height: 1.2;
   letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;      /* 确保生效 */
+  text-overflow: ellipsis; /* 确保生效 */
+  max-width: 100%;       /* 新增 */
 }
 
 .order-item p span {
@@ -146,22 +181,23 @@ const emit = defineEmits(['publish', 'cancel', 'review'])
 .order-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;  
   margin-left: auto;
-  width: 80px;
+  width: 65px;  
 }
 
 .order-item .review-button,
 .order-item .cancel-button {
   width: 100%;
   border: none;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 5px;  
+  border-radius: 6px;  
   cursor: pointer;
-  font-size: 0.9em;
+  font-size: 0.8em;  
   text-align: center;
-  white-space: normal;
-  font-weight: 1000;
+  white-space: nowrap;
+  font-weight: 600;  
+  min-height: 28px; 
 }
 
 .order-item .cancel-button {
@@ -189,5 +225,37 @@ const emit = defineEmits(['publish', 'cancel', 'review'])
     padding: 8px 12px;
     font-size: 0.9em;
   }
+  
+  .order-item p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
+
+.order-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  background: #f5f5f5;
+}
+
+.order-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #999;
+  font-size: 0.9em;
+}
+
 </style>

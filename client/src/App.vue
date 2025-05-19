@@ -5,7 +5,26 @@ import TopHead from '@/components/TopHead.vue'
 </script>
 
 <template>
-  <TopHead />
-  <RouterView />
-  <BottomNav />
+  <div class="app-container">
+    <TopHead />
+    <div class="content-container">
+      <RouterView />
+    </div>
+    <BottomNav />
+  </div>
 </template>
+
+<style>
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+
+}
+
+.content-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+</style>

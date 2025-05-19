@@ -65,7 +65,12 @@ const handleImageError = () => {
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   background-color: #f4f4f4;
+  overflow: hidden; 
+}
+
+.home-page > :first-child {
+  flex-shrink: 0; 
 }
 </style>

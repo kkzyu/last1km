@@ -2,6 +2,7 @@
   "orders": [
     {
       "id": "000003",
+      "image": "./images/order-3.jpg",
       "date": "2025-05-12",
       "status": "进行中",
       "from": "蓝田北门",
@@ -12,6 +13,7 @@
     },
     {
       "id": "000002",
+      "image": "./images/order-2.jpg",
       "date": "2025-05-10",
       "status": "已取消",
       "from": "蓝田北门",
@@ -22,6 +24,7 @@
     },
     {
       "id": "000001",
+      "image": "./images/order-1.jpg",
       "date": "2025-05-08",
       "status": "已完成",
       "from": "东二门口",
