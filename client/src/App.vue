@@ -1,12 +1,11 @@
 <script setup>
 import { RouterView } from 'vue-router'
 import BottomNav from '@/components/BottomNav.vue'
-import TopHead from '@/components/TopHead.vue'
 </script>
 
 <template>
   <div class="app-container">
-    <TopHead />
+    <!-- <TopHead /> -->
     <div class="content-container">
       <RouterView />
     </div>
@@ -15,16 +14,19 @@ import TopHead from '@/components/TopHead.vue'
 </template>
 
 <style>
+
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-
+  height: 750px;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .content-container {
   flex: 1;
   overflow: hidden;
   position: relative;
+  
 }
 </style>

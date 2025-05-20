@@ -1,0 +1,22 @@
+[
+  {
+    "id": "rider_1",
+    "name": "送餐员喜多郁代",
+    "avatar": "/images/avatar1.jpg"
+  },
+  {
+    "id": "rider_2",
+    "name": "送餐员波奇",
+    "avatar": "/images/avatar2.jpg"
+  },
+  {
+    "id": "rider_3",
+    "name": "送餐员凉",
+    "avatar": "/images/avatar3.jpg"
+  },
+  {
+    "id": "rider_4",
+    "name": "送餐员虹夏",
+    "avatar": "/images/avatar4.jpg"
+  }
+]

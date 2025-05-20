@@ -1,20 +1,18 @@
 <template>
-  <div class="home-page">
-    <HomeCarousel />
-    <OrderHistory 
-      :grouped-orders="groupedOrders"
-      @publish="publishNewOrder"
-      @cancel="cancelOrder"
-      @review="reviewOrder"
-    />
+    <HomeHead />
+    <div class="home-page">
+      <HomeCarousel />
+      <OrderHistory :grouped-orders="groupedOrders" @publish="publishNewOrder" @cancel="cancelOrder"
+        @review="reviewOrder" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import information from '@/assets/information.json'
+import information from '@/assets/data/information.json'
 import HomeCarousel from '@/components/HomeCarousel.vue'
 import OrderHistory from '@/components/HomeOrderhistory.vue'
+import HomeHead from '@/components/Header/HomeHead.vue'
 
 // 状态管理
 const activeTab = ref('home')
@@ -61,16 +59,38 @@ const handleImageError = () => {
 </script>
 
 <style scoped>
-.home-page {
-  font-family: sans-serif;
+.app-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background-color: #f4f4f4;
-  overflow: hidden; 
+  height: 750px;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-.home-page > :first-child {
-  flex-shrink: 0; 
+.content-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  
+}
+.home-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  /* 启用整体滚动 */
+}
+
+.scrolling-banner {
+  width: 100%;
+  margin-bottom: 20px;
+  /* 添加与内容的间距 */
+}
+
+/* 订单历史容器调整 */
+.home-page> :last-child {
+  flex: 1;
+  min-height: 0;
+  /* 允许内容收缩 */
 }
 </style>

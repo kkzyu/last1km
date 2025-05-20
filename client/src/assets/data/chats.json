@@ -1,0 +1,30 @@
+[
+  {
+    "id": "chat_rider_1",
+    "riderId": "rider_1",
+    "lastMessage": "您的外卖已经送至青溪4舍711，请及时领取~",
+    "minutesAgo": 5,
+    "unreadCount": 2
+  },
+  {
+    "id": "chat_rider_2",
+    "riderId": "rider_2",
+    "lastMessage": "请及时领取…谢谢！",
+    "minutesAgo": 120,
+    "unreadCount": 3
+  },
+  {
+    "id": "chat_rider_3",
+    "riderId": "rider_3",
+    "lastMessage": "711。取。",
+    "minutesAgo": 30,
+    "unreadCount": 1
+  },
+  {
+    "id": "chat_rider_4",
+    "riderId": "rider_4",
+    "lastMessage": "您的外卖已经送至青溪4舍楼下寄存点，请及时领取~",
+    "minutesAgo": 15,
+    "unreadCount": 1
+  }
+]

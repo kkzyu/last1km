@@ -29,10 +29,4 @@ defineProps({
   font-weight: bold;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .logo {
-    font-size: 1em;
-  }
-}
 </style>

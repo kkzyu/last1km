@@ -9,10 +9,10 @@
     </div>
     <div 
       class="nav-item" 
-      :class="{ active: $route.path === '/orders' }"
-      @click="$router.push('/orders')">
+      :class="{ active: $route.path === '/messages' }"
+      @click="$router.push('/messages')">
       <span class="icon"><i class="fas fa-comment-alt"></i></span> 
-      <span class="badge">3</span> 
+      <!-- <span class="badge"></span>  -->
       消息
     </div>
     <div 
@@ -35,13 +35,14 @@ const $route = useRoute()
 .bottom-nav {
   display: flex;
   justify-content: space-around;
+  max-width: 500px;
+  margin: 0 auto;
   align-items: center;
   background-color: #ffffff;
   border-top: 1px solid #e0e0e0;
   padding: 10px 0;
   position: fixed;
   bottom: 0;
-  left: 0;
   width: 100%;
   box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
 }
