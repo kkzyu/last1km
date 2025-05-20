@@ -163,7 +163,7 @@ watch(() => props.chatId, (newChatId) => {
 .chat-page {
   display: flex;
   flex-direction: column;
-  height: 720px; /* Full viewport height */
+  height: 100%; /* Full viewport height */
   max-width: 500px; /* Max width for chat interface */
   margin: 0 auto; /* Center on larger screens */
   background-color: #f0f2f5; /* A slightly off-white background */

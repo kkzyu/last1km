@@ -43,21 +43,15 @@ defineProps({
 <style scoped>
 .rider-stats-panel-card {
   background-color: #f9f9f9; /* Slightly different background */
-  padding: 15px;
+  padding: 5px;
   border-radius: 8px;
-  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06); */ /* Optional shadow */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06); /* Optional shadow */
 }
-/* .rider-stats-panel-card h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  color: #333;
-  font-size: 1.1em;
-  text-align: center;
-} */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* 2 columns */
-  gap: 12px;
+  gap: 5px;
 }
 .stat-item {
   display: flex;
@@ -65,7 +59,7 @@ defineProps({
   align-items: center;
   text-align: center;
   padding: 10px 5px;
-  /* background-color: #fff; */ /* Can remove if card has bg */
+  background-color: #fff; /* Can remove if card has bg */
   border-radius: 6px;
 }
 .stat-value {

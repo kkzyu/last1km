@@ -2,7 +2,10 @@
   <div class="rider-profile-page">
     <header class="profile-page-header">
       <button @click="goBack" class="back-button" aria-label="返回">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
       </button>
       <h4 class="page-title">{{ rider?.name || '送餐员主页' }}</h4>
       <div class="header-placeholder"></div>
@@ -10,7 +13,7 @@
 
     <div v-if="isLoading" class="loading-indicator">正在加载送餐员信息...</div>
     <div v-else-if="error" class="error-message">错误: {{ error }}</div>
-    
+
     <div v-else-if="rider" class="profile-content-scrollable">
       <div class="profile-main-layout">
         <!-- Left Column -->
@@ -26,12 +29,8 @@
       </div>
 
       <!-- Order History (Full Width Below) -->
-      <RiderOrderHistory
-        :orders="riderOrderHistory"
-        :is-loading="isOrdersLoading"
-        :error="ordersError"
-        @order-reviewed="handleOrderReviewed"
-      />
+      <RiderOrderHistory :orders="riderOrderHistory" :is-loading="isOrdersLoading" :error="ordersError"
+        @order-reviewed="handleOrderReviewed" />
     </div>
     <div v-else class="not-found">未找到送餐员信息。</div>
 
@@ -160,8 +159,9 @@ const handleOrderReviewed = (reviewDetails) => {
 .rider-profile-page {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Full viewport height */
-  max-width: 600px;
+  height: 750px;
+  /* Full viewport height */
+  max-width: 500px;
   margin: 0 auto;
   background-color: #f4f6f8;
 }
@@ -173,89 +173,191 @@ const handleOrderReviewed = (reviewDetails) => {
   padding: 12px 16px;
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
-  flex-shrink: 0; /* Prevent header from shrinking */
+  flex-shrink: 0;
+  /* Prevent header from shrinking */
   position: sticky;
   top: 0;
   z-index: 10;
 }
-.back-button { background: none; border: none; color: #007bff; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-.back-button:hover { background-color: #f0f0f0; }
-.back-button svg { width: 22px; height: 22px; stroke: #555; }
-.page-title { margin: 0; font-size: 1.2em; font-weight: 600; color: #333; text-align: center; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.header-placeholder { width: 40px; flex-shrink: 0; }
 
-.loading-indicator, .error-message, .not-found {
+.back-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.back-button:hover {
+  background-color: #f0f0f0;
+}
+
+.back-button svg {
+  width: 15px;
+  height: 15px;
+  stroke: #555;
+}
+
+.page-title {
+  margin: 0;
+  color: #333;
+  text-align: center;
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-placeholder {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.loading-indicator,
+.error-message,
+.not-found {
   text-align: center;
   padding: 40px 20px;
   font-size: 1.1em;
   color: #555;
-  flex-grow: 1; /* Take space if content is not loaded */
+  flex-grow: 1;
+  /* Take space if content is not loaded */
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.error-message { color: #d9534f; }
+
+.error-message {
+  color: #d9534f;
+}
 
 .profile-content-scrollable {
-  flex-grow: 1; /* Allow this area to grow and shrink */
-  overflow-y: auto; /* Enable vertical scrolling for this section */
+  flex-grow: 1;
+  /* Allow this area to grow and shrink */
+  overflow-y: auto;
+  /* Enable vertical scrolling for this section */
   padding: 15px;
   display: flex;
-  flex-direction: column; /* Stack main layout and order history */
+  flex-direction: column;
+  /* Stack main layout and order history */
 }
 
 .profile-main-layout {
   display: flex;
-  flex-direction: row; /* Left and Right columns side-by-side */
+  flex-direction: row;
   gap: 15px;
-  margin-bottom: 20px; /* Space before order history */
-  background-color: #fff; /* Card-like background for this section */
+  margin-bottom: 0px;
   padding: 15px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  align-items: stretch;
 }
 
 .left-column {
-  flex: 1.2; /* Give left column slightly more space, adjust as needed */
+  flex: 3;  /* 原为1.2 */
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Space between RiderInfoCard and RiderStatsPanel */
+  gap: 10px;
 }
 
 .right-column {
-  flex: 0.8; /* Give right column slightly less space */
-  display: flex; /* To help center WordCloud if its height is less than left column */
-  height: 100%; /* Full height of the parent */
-  align-items: flex-start; /* Align word cloud to the top */
+  flex: 2;  /* 原为0.8 */
+  display: flex;
+  min-height: 100%;
+  align-items: stretch;
 }
+
+
 
 /* RiderOrderHistory will naturally take full width below the profile-main-layout */
 
 .profile-actions {
-  position: sticky; /* Make footer sticky at the bottom of the viewport */
+  position: fixed;
+  /* Make footer sticky at the bottom of the viewport */
   bottom: 0;
-  left: 0; /* Necessary for sticky within its parent if parent is not body */
+  left: 0;
+  /* Necessary for sticky within its parent if parent is not body */
   right: 0;
-  max-width: 500px; /* Match page max-width */
-  margin: 0 auto; /* Center it if page is wider */
+  width:100%;
+  max-width: 480px;
+  /* Match page max-width */
+  margin: 0 auto;
+  /* Center it if page is wider */
   display: flex;
   justify-content: space-around;
   background-color: #ffffff;
   padding: 12px 10px;
   border-top: 1px solid #e0e0e0;
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
-  z-index: 100; /* Ensure it's above scrollable content */
-  flex-shrink: 0; /* Prevent footer from shrinking */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  /* Ensure it's above scrollable content */
+  flex-shrink: 0;
+  /* Prevent footer from shrinking */
 }
+
 /* Action button styles from previous example are fine */
-.action-button { flex-grow: 1; margin: 0 5px; padding: 10px 12px; font-size: 0.9em; border: 1px solid #ccc; border-radius: 20px; background-color: #f8f9fa; color: #333; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
-.action-button svg { margin-right: 6px; }
-.action-button:hover { background-color: #e9ecef; border-color: #bbb; }
-.action-button.block { color: #dc3545; border-color: #dc3545; }
-.action-button.block:hover { background-color: #dc3545; color: white; }
-.action-button.contact { color: #007bff; border-color: #007bff; }
-.action-button.contact:hover { background-color: #007bff; color: white; }
-.action-button.like { color: #28a745; border-color: #28a745; }
-.action-button.like.liked { background-color: #28a745; color: white; }
-.action-button.like:hover:not(.liked) { background-color: #28a745; color: white; }
+.action-button {
+  flex: 1;
+  margin: 0 5px;
+  padding: 10px 12px;
+  font-size: 0.9em;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  background-color: #f8f9fa;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.action-button svg {
+  margin-right: 6px;
+}
+
+.action-button:hover {
+  background-color: #e9ecef;
+  border-color: #bbb;
+}
+
+.action-button.block {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.action-button.block:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.action-button.contact {
+  color: #007bff;
+  border-color: #007bff;
+}
+
+.action-button.contact:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.action-button.like {
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.action-button.like.liked {
+  background-color: #28a745;
+  color: white;
+}
+
+.action-button.like:hover:not(.liked) {
+  background-color: #28a745;
+  color: white;
+}
 </style>

@@ -18,7 +18,7 @@
       "avatar": "/images/avatar2.jpg"
     },
     "messages": [
-      { "id": "msg4", "text": "您好，外卖放到青溪4舍了。", "sender": "rider", "timestamp": "2023-10-26T08:30:00.000Z" }
+      { "id": "msg4", "text": "您好，外卖放到青溪4舍了。", "sender": "rider", "timestamp": "2023-10-26T08:30:00.000Z" },
       { "id": "msg5", "text": "请及时领取…谢谢！", "sender": "rider", "timestamp": "2023-10-26T08:30:00.000Z" }
     ]
   },

@@ -104,10 +104,10 @@ const submitReview = () => {
 <style scoped>
 .order-history-item-card {
   background-color: #fff;
-  padding: 15px;
+  padding: 10px;
   border-radius: 8px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
-  margin-bottom: 15px;
+  margin-bottom: 50px;
 }
 .order-header {
   display: flex;
@@ -130,6 +130,7 @@ const submitReview = () => {
   font-size: 0.9em;
   color: #555;
   margin: 5px 0;
+  /* margin-bottom: 40px; */
 }
 .review-section {
   margin-top: 15px;
