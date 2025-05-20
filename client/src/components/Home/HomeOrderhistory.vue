@@ -99,7 +99,7 @@ const getImageUrl = (path) => {
 
   try {
     // 使用Vite推荐的资源路径处理方式
-    return new URL(`/src/assets/images/${path}`, import.meta.url).href
+    return new URL(`/images/${path}`, import.meta.url).href
   } catch (error) {
     console.error('图片路径解析错误:', error)
     return ''
