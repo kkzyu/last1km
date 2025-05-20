@@ -27,11 +27,11 @@
         >
           <div class="order-image">
             <img 
-              :src="order.image" 
+              :src="getImageUrl(order.image)" 
               alt="订单图片"
-              v-if="order.image"
+              @error="handleImageError(order.id)"
             >
-            <div v-else class="image-placeholder">暂无图片</div>
+            <div v-if="!order.image" class="image-placeholder">暂无图片</div>
           </div>
 
           <div class="order-details">
@@ -63,6 +63,16 @@
             >
               评价订单
             </button>
+            <div class="order-actions">
+              <button
+                v-if="order.status === '已取消'"
+                class="restore-button"
+                @click="emit('restore', order.id)"
+              >
+                恢复订单
+              </button>
+              <!-- 原有按钮保持不变 -->
+            </div>
           </div>
         </div>
       </template>
@@ -71,6 +81,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 defineProps({
   groupedOrders: {
     type: Object,
@@ -78,7 +90,27 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['publish', 'cancel', 'review'])
+
+const emit = defineEmits(['publish', 'cancel', 'review', 'restore', 'image-error'])
+
+
+const getImageUrl = (path) => {
+  if (!path) return ''
+
+  try {
+    // 使用Vite推荐的资源路径处理方式
+    return new URL(`/src/assets/images/${path}`, import.meta.url).href
+  } catch (error) {
+    console.error('图片路径解析错误:', error)
+    return ''
+  }
+}
+
+// 添加图片错误处理函数
+const handleImageError = (orderId) => {
+  console.error('图片加载失败:', orderId)
+  emit('image-error', orderId)
+}
 </script>
 
 <style scoped>
@@ -88,7 +120,21 @@ const emit = defineEmits(['publish', 'cancel', 'review'])
   flex: 1;
   overflow-y: auto; 
   height: 0;  
-  padding-bottom: 55px; 
+  padding-bottom: 55px;
+  background-color: #fff;
+}
+
+.order-list .order-item {
+  background-color: #eee; 
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid #ddd; 
 }
 
 .order-list .order-item:last-child {
@@ -256,6 +302,21 @@ const emit = defineEmits(['publish', 'cancel', 'review'])
   transform: translate(-50%, -50%);
   color: #999;
   font-size: 0.9em;
+}
+
+.order-item .restore-button {
+  background-color: #4CAF50;
+  color: white;
+  width: 100%;
+  border: none;
+  padding: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8em;
+  text-align: center;
+  white-space: nowrap;
+  font-weight: 600;
+  min-height: 28px;
 }
 
 </style>

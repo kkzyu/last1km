@@ -11,10 +11,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import information from '@/assets/data/information.json'
-import HomeCarousel from '@/components/HomeCarousel.vue'
-import OrderHistory from '@/components/HomeOrderhistory.vue'
+import HomeCarousel from '@/components/Home/HomeCarousel.vue'
+import OrderHistory from '@/components/Home/HomeOrderhistory.vue'
 import HomeHead from '@/components/Header/HomeHead.vue'
-import BottomNav from '@/components/BottomNav.vue'
+import BottomNav from '@/components/Bottom/BottomNav.vue'
 
 // 状态管理
 const activeTab = ref('home')

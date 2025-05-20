@@ -1,47 +1,195 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import MessagesHome from '@/views/Messages/MessagesHome.vue';
-import ChatPage from '@/views/Messages/ChatPage.vue';
-import RiderProfilePage from '@/views/Messages/RiderProfilePage.vue';
+
+// Main views
+const HomeView = () => import('@/views/Home/HomeView.vue')
+const LoginView = () => import('@/views/Login/LoginView.vue')
+const RegisterView = () => import('@/views/Login/RegisterView.vue')
+const ProfileView = () => import('@/views/Profile/ProfileView.vue')
+
+// Messages module
+const MessagesHome = () => import('@/views/Messages/MessagesHome.vue')
+const ChatPage = () => import('@/views/Messages/ChatPage.vue')
+const RiderProfilePage = () => import('@/views/Messages/RiderProfilePage.vue')
+
+// Profile sub-routes
+const ProfilePersonal = () => import('@/views/Profile/ProfilePersonal.vue')
+const ProfileWallet = () => import('@/views/Profile/ProfileWallet.vue')
+const ProfileOrderHistory = () => import('@/views/Profile/ProfileOrderHistory.vue')
+const ProfileSetup = () => import('@/views/Profile/ProfileSetup.vue')
+const ProfileSwitchAccount = () => import('@/views/Profile/ProfileSwitchAccount.vue')
 
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: HomeView
+    redirect: '/home' // Redirect to home instead of login (more common pattern)
   },
+  {
+    path: '/home',
+    name: 'home',
+    component: HomeView,
+    meta: { 
+      requiresAuth: true,
+      title: '首页'
+    }
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginView,
+    meta: { 
+      requiresGuest: true,
+      title: '登录'
+    }
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: RegisterView,
+    meta: {
+      requiresGuest: true,
+      title: '注册'
+    }
+  },
+  // Messages module routes
   {
     path: '/messages',
-    name: 'MessagesHome',
-    component: MessagesHome,
-    meta: { title: '消息' }
+    name: 'messages',
+    component: () => import('@/views/Messages/MessagesHome.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '消息'
+    }
   },
   {
-    // 使用 :chatId 作为动态参数，代表某个具体的聊天
     path: '/messages/chat/:chatId',
-    name: 'ChatPage',
-    component: ChatPage,
-    props: true, // 允许将路由参数作为 props 传递给组件
-    meta: { title: '聊天详情' }
+    name: 'chat',
+    component: () => import('@/views/Messages/ChatPage.vue'),
+    props: true,
+    meta: { 
+      requiresAuth: true,
+      title: '聊天'
+    }
   },
   {
-    // 使用 :riderId 作为动态参数，代表某个骑手
     path: '/rider/:riderId/profile',
-    name: 'RiderProfilePage',
-    component: RiderProfilePage,
+    name: 'rider-profile',
+    component: () => import('@/views/Messages/RiderProfilePage.vue'),
     props: true,
-    meta: { title: '送餐员主页' }
+    meta: { 
+      requiresAuth: true,
+      title: '送餐员资料'
+    }
   },
+  // Profile module routes
   {
     path: '/profile',
     name: 'profile',
-    component: () => import('@/views/ProfileView.vue')
+    component: () => import('@/views/Profile/ProfileView.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '个人资料'
+    }
+  },
+  {
+    path: '/profile/personal',
+    name: 'profile-personal',
+    component: () => import('@/views/Profile/ProfilePersonal.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '个人资料'
+    }
+  },
+  {
+    path: '/profile/wallet',
+    name: 'profile-wallet',
+    component: () => import('@/views/Profile/ProfileWallet.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '我的钱包'
+    }
+  },
+  {
+    path: '/profile/orders',
+    name: 'profile-orders',
+    component: () => import('@/views/Profile/ProfileOrderHistory.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '历史订单'
+    }
+  },
+  {
+    path: '/profile/settings',
+    name: 'profile-settings',
+    component: () => import('@/views/Profile/ProfileSetup.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '设置'
+    }
+  },
+  {
+    path: '/profile/switch-account',
+    name: 'profile-switch-account',
+    component: () => import('@/views/Profile/ProfileSwitchAccount.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '切换账号'
+    }
+  },
+  // Fallback route for 404
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/home'
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
+  // Better scroll behavior
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
 })
 
+// Authentication guard
+function checkAuthentication() {
+  // 示例：检查 localStorage 中是否有 authToken
+  return !!localStorage.getItem('authToken');
+  // 或者，如果你使用 Pinia/Vuex:
+  // import { useAuthStore } from '@/stores/auth'; // 假设你有一个 auth store
+  // const authStore = useAuthStore();
+  // return authStore.isAuthenticated;
+}
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = checkAuthentication();
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiresGuest = to.matched.some(record => record.meta.requiresGuest);
+
+  // 更新文档标题
+  if (to.meta.title) {
+    document.title = `${to.meta.title} | 学士配送`; // 确保替换 "你的应用名称"
+  } else {
+    document.title = '学士配送'; // 默认标题
+  }
+
+  if (requiresAuth && !isAuthenticated) {
+    // 如果需要认证但用户未认证，重定向到登录页
+    // 将用户尝试访问的路径作为查询参数传递，以便登录后可以重定向回去
+    console.log('需要认证但未登录，跳转到登录页，目标:', to.fullPath);
+    next({ name: 'login', query: { redirect: to.fullPath } });
+  } else if (requiresGuest && isAuthenticated) {
+    // 如果是访客页面（如登录、注册）但用户已认证，重定向到首页
+    console.log('已登录，访问访客页面，跳转到首页');
+    next({ name: 'home' });
+  } else {
+    // 其他情况（不需要认证，或者需要认证且已认证）正常导航
+    console.log('正常导航至:', to.fullPath);
+    next();
+  }
+});
 export default router
