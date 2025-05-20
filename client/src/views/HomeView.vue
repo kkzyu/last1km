@@ -1,10 +1,11 @@
 <template>
-    <HomeHead />
-    <div class="home-page">
-      <HomeCarousel />
-      <OrderHistory :grouped-orders="groupedOrders" @publish="publishNewOrder" @cancel="cancelOrder"
-        @review="reviewOrder" />
+  <HomeHead />
+  <div class="home-page">
+    <HomeCarousel />
+    <OrderHistory :grouped-orders="groupedOrders" @publish="publishNewOrder" @cancel="cancelOrder"
+      @review="reviewOrder" />
   </div>
+  <BottomNav />
 </template>
 
 <script setup>
@@ -13,6 +14,7 @@ import information from '@/assets/data/information.json'
 import HomeCarousel from '@/components/HomeCarousel.vue'
 import OrderHistory from '@/components/HomeOrderhistory.vue'
 import HomeHead from '@/components/Header/HomeHead.vue'
+import BottomNav from '@/components/BottomNav.vue'
 
 // 状态管理
 const activeTab = ref('home')
@@ -71,8 +73,9 @@ const handleImageError = () => {
   flex: 1;
   overflow: hidden;
   position: relative;
-  
+
 }
+
 .home-page {
   display: flex;
   flex-direction: column;

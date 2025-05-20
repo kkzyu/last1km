@@ -2,21 +2,49 @@
   {
     "id": "rider_1",
     "name": "送餐员喜多郁代",
-    "avatar": "/images/avatar1.jpg"
+    "avatar": "/images/avatar1.jpg",
+    "stats": {
+      "onTimeRate": 0.98,
+      "positiveFeedbackRate": 0.95,
+      "averageDailyOrders": 35,
+      "likeCount": 1250,
+      "reviewKeywords": ["速度快", "态度好", "准时", "专业", "餐品完好", "礼貌", "高效"]
+    }
   },
   {
     "id": "rider_2",
     "name": "送餐员波奇",
-    "avatar": "/images/avatar2.jpg"
+    "avatar": "/images/avatar2.jpg",
+    "stats": {
+      "onTimeRate": 0.98,
+      "positiveFeedbackRate": 0.95,
+      "averageDailyOrders": 35,
+      "likeCount": 1250,
+      "reviewKeywords": ["速度快", "态度好", "准时", "专业", "餐品完好", "礼貌", "高效"]
+    }
   },
   {
     "id": "rider_3",
     "name": "送餐员凉",
-    "avatar": "/images/avatar3.jpg"
+    "avatar": "/images/avatar3.jpg",
+    "stats": {
+      "onTimeRate": 0.98,
+      "positiveFeedbackRate": 0.95,
+      "averageDailyOrders": 35,
+      "likeCount": 1250,
+      "reviewKeywords": ["速度快", "态度好", "准时", "专业", "餐品完好", "礼貌", "高效"]
+    }
   },
   {
     "id": "rider_4",
     "name": "送餐员虹夏",
-    "avatar": "/images/avatar4.jpg"
+    "avatar": "/images/avatar4.jpg",
+    "stats": {
+      "onTimeRate": 0.98,
+      "positiveFeedbackRate": 0.95,
+      "averageDailyOrders": 35,
+      "likeCount": 1250,
+      "reviewKeywords": ["速度快", "态度好", "准时", "专业", "餐品完好", "礼貌", "高效"]
+    }
   }
 ]

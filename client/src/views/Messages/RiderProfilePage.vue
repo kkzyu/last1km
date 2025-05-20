@@ -1,189 +1,261 @@
 <template>
   <div class="rider-profile-page">
-    <header class="profile-header">
-      <button @click="goBack" class="back-button">< 返回</button>
-      <h1>骑手主页</h1>
-      <div class="placeholder"></div>
+    <header class="profile-page-header">
+      <button @click="goBack" class="back-button" aria-label="返回">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <h4 class="page-title">{{ rider?.name || '送餐员主页' }}</h4>
+      <div class="header-placeholder"></div>
     </header>
 
-    <div v-if="isLoading" class="loading">加载骑手信息...</div>
-    <div v-else-if="!riderInfo" class="error">无法加载骑手信息。</div>
+    <div v-if="isLoading" class="loading-indicator">正在加载送餐员信息...</div>
+    <div v-else-if="error" class="error-message">错误: {{ error }}</div>
+    
+    <div v-else-if="rider" class="profile-content-scrollable">
+      <div class="profile-main-layout">
+        <!-- Left Column -->
+        <div class="left-column">
+          <RiderInfoCard :rider="rider" />
+          <RiderStatsPanel :stats="rider.stats" />
+        </div>
 
-    <div v-else class="profile-content">
-      <img :src="riderInfo.avatar" :alt="riderInfo.name" class="rider-avatar" />
-      <h2>{{ riderInfo.name }}</h2>
-      <p><strong>ID:</strong> {{ riderInfo.id }}</p>
-      <p><strong>评分:</strong> {{ riderInfo.rating }} / 5.0</p>
-      <p><strong>车型:</strong> {{ riderInfo.vehicle }}</p>
-      <p><strong>简介:</strong> {{ riderInfo.bio }}</p>
-      <p><strong>已完成订单:</strong> {{ riderInfo.completedOrders }}</p>
-      
-      <!-- 假设我们知道与该骑手的聊天ID，或者可以根据riderId找到/创建聊天 -->
-      <button v-if="riderInfo.chatId" @click="goToChat(riderInfo.chatId)" class="chat-button">
-        继续聊天
-      </button>
-      <!-- 或者，如果没有直接的chatId，但可以发起新聊天 -->
-      <!-- <button @click="startNewChat(riderInfo.id)" class="chat-button">
-        发起聊天
-      </button> -->
+        <!-- Right Column -->
+        <div class="right-column">
+          <WordCloud v-if="rider.stats && rider.stats.reviewKeywords" :keywords="rider.stats.reviewKeywords" />
+        </div>
+      </div>
+
+      <!-- Order History (Full Width Below) -->
+      <RiderOrderHistory
+        :orders="riderOrderHistory"
+        :is-loading="isOrdersLoading"
+        :error="ordersError"
+        @order-reviewed="handleOrderReviewed"
+      />
     </div>
+    <div v-else class="not-found">未找到送餐员信息。</div>
+
+    <footer v-if="rider" class="profile-actions">
+      <!-- Footer buttons remain the same -->
+      <button @click="blockRider" class="action-button block">拉黑</button>
+      <button @click="contactRider" class="action-button contact">联系</button>
+      <button @click="likeRider" class="action-button like" :class="{ 'liked': isLikedByCurrentUser }">点赞</button>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+// Import the new/renamed components
+import RiderInfoCard from '@/components/Message/RiderInfoCard.vue';
+import RiderStatsPanel from '@/components/Message/RiderStatsPanel.vue';
+import WordCloud from '@/components/Message/WordCloud.vue';
+import RiderOrderHistory from '@/components/Message/RiderOrderHistory.vue';
+
+// ... (rest of the script remains largely the same as your last version)
+// Ensure fetchRiderData, fetchRiderOrderHistory, and event handlers are present.
 
 const route = useRoute();
 const router = useRouter();
 
-const props = defineProps({
-  riderId: {
-    type: String,
-    required: true,
-  },
-});
-
-const riderInfo = ref(null);
+const rider = ref(null);
 const isLoading = ref(true);
+const error = ref(null);
 
-// 模拟API获取骑手信息
-const fetchRiderProfile = async (id) => {
+const riderOrderHistory = ref([]);
+const isOrdersLoading = ref(true);
+const ordersError = ref(null);
+
+const isLikedByCurrentUser = ref(false);
+
+const CURRENT_USER_ID = 'user_abc';
+const riderId = computed(() => route.params.riderId || 'rider_1');
+
+async function fetchRiderData() {
   isLoading.value = true;
-  console.log(`Fetching profile for rider ${id}`);
-  await new Promise(resolve => setTimeout(resolve, 500)); // 模拟网络延迟
-
-  // 模拟数据
-  const mockRiders = {
-    'rider_123': {
-      id: 'rider_123',
-      name: '骑手小张',
-      avatar: 'https://via.placeholder.com/150/FF0000/FFFFFF?Text=R1',
-      rating: 4.8,
-      vehicle: '电动车',
-      bio: '五年配送经验，路线熟悉，服务热情。',
-      completedOrders: 1250,
-      chatId: 'chat_rider_123' // 假设我们知道与此骑手的聊天ID
-    },
-    'rider_456': {
-      id: 'rider_456',
-      name: '骑手李师傅',
-      avatar: 'https://via.placeholder.com/150/00FF00/FFFFFF?Text=R2',
-      rating: 4.9,
-      vehicle: '摩托车',
-      bio: '安全第一，准时送达。',
-      completedOrders: 3000,
-      chatId: 'chat_rider_456'
-    },
-    'rider_789': {
-      id: 'rider_789',
-      name: '骑手王美女',
-      avatar: 'https://via.placeholder.com/150/0000FF/FFFFFF?Text=R3',
-      rating: 4.7,
-      vehicle: '电动车',
-      bio: '微笑服务，送餐上门。',
-      completedOrders: 800,
-      chatId: 'chat_rider_789'
+  error.value = null;
+  try {
+    const response = await fetch('/data/riders.json');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const allRiders = await response.json();
+    if (allRiders[riderId.value]) {
+      rider.value = { ...allRiders[riderId.value] };
+      if (!rider.value.stats) rider.value.stats = { likeCount: 0, reviewKeywords: [] };
+      if (!rider.value.stats.reviewKeywords) rider.value.stats.reviewKeywords = [];
+      isLikedByCurrentUser.value = localStorage.getItem(`liked_rider_${riderId.value}`) === 'true';
+    } else {
+      throw new Error('Rider not found');
     }
-  };
+  } catch (e) {
+    console.error("Failed to fetch rider data:", e);
+    error.value = e.message;
+    rider.value = null;
+  } finally {
+    isLoading.value = false;
+  }
+}
 
-  riderInfo.value = mockRiders[id] || null;
-  isLoading.value = false;
-};
+async function fetchRiderOrderHistory() {
+  if (!rider.value) return;
+  isOrdersLoading.value = true;
+  ordersError.value = null;
+  try {
+    const response = await fetch('/data/orders.json');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const allOrders = await response.json();
+    if (allOrders[CURRENT_USER_ID] && allOrders[CURRENT_USER_ID][riderId.value]) {
+      riderOrderHistory.value = allOrders[CURRENT_USER_ID][riderId.value].map(order => ({
+        ...order,
+        userReview: order.userReview || null
+      }));
+    } else {
+      riderOrderHistory.value = [];
+    }
+  } catch (e) {
+    console.error("Failed to fetch order history:", e);
+    ordersError.value = e.message;
+  } finally {
+    isOrdersLoading.value = false;
+  }
+}
 
-const goBack = () => {
-  router.back();
-};
-
-const goToChat = (chatId) => {
-  router.push({ name: 'ChatPage', params: { chatId } });
-};
-
-// const startNewChat = (riderId) => {
-//   // 实际应用中，这里可能需要先通过API创建或获取一个chatId
-//   console.log(`Attempting to start new chat with rider ${riderId}`);
-//   // 假设创建后得到 chatId = 'new_chat_for_' + riderId;
-//   // router.push({ name: 'ChatPage', params: { chatId: 'new_chat_for_' + riderId } });
-// };
-
-onMounted(() => {
-  fetchRiderProfile(props.riderId);
-});
-
-watch(() => props.riderId, (newRiderId) => {
-  if (newRiderId) {
-    fetchRiderProfile(newRiderId);
+onMounted(async () => {
+  await fetchRiderData();
+  if (rider.value) {
+    await fetchRiderOrderHistory();
   }
 });
+
+const goBack = () => { router.go(-1); };
+const blockRider = () => { if (!rider.value) return; alert(`已将送餐员 ${rider.value.name} 加入黑名单 (模拟操作)`); };
+const contactRider = () => {
+  if (!rider.value) return;
+  router.push({ name: 'ChatPage', params: { chatId: `chat_${rider.value.id}` } });
+};
+const likeRider = () => {
+  if (!rider.value || !rider.value.stats) return;
+  if (isLikedByCurrentUser.value) {
+    rider.value.stats.likeCount--;
+    isLikedByCurrentUser.value = false;
+    localStorage.removeItem(`liked_rider_${riderId.value}`);
+    alert(`已取消点赞 ${rider.value.name} (模拟操作)`);
+  } else {
+    rider.value.stats.likeCount++;
+    isLikedByCurrentUser.value = true;
+    localStorage.setItem(`liked_rider_${riderId.value}`, 'true');
+    alert(`已点赞 ${rider.value.name}! (模拟操作)`);
+  }
+};
+const handleOrderReviewed = (reviewDetails) => {
+  const orderIndex = riderOrderHistory.value.findIndex(o => o.orderId === reviewDetails.orderId);
+  if (orderIndex !== -1) {
+    riderOrderHistory.value[orderIndex].userReview = reviewDetails.review;
+  }
+};
+
 </script>
 
 <style scoped>
 .rider-profile-page {
-  padding: 0 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Full viewport height */
   max-width: 600px;
   margin: 0 auto;
+  background-color: #f4f6f8;
 }
-.profile-header {
+
+.profile-page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0; /* 调整内边距以适应无背景的头部 */
-  margin-bottom: 1rem;
-  border-bottom: 1px solid #e7e7e7;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0; /* Prevent header from shrinking */
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
-.profile-header h1 {
-  font-size: 1.2rem;
-  margin: 0;
-}
-.back-button {
-  background: none;
-  border: none;
-  font-size: 1rem;
-  color: #007bff;
-  cursor: pointer;
-  padding: 0.5rem;
-}
-.placeholder {
-  width: 60px; /* 与返回按钮宽度近似，用于居中标题 */
-}
-.loading, .error {
+.back-button { background: none; border: none; color: #007bff; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.back-button:hover { background-color: #f0f0f0; }
+.back-button svg { width: 22px; height: 22px; stroke: #555; }
+.page-title { margin: 0; font-size: 1.2em; font-weight: 600; color: #333; text-align: center; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-placeholder { width: 40px; flex-shrink: 0; }
+
+.loading-indicator, .error-message, .not-found {
   text-align: center;
-  padding: 2rem;
-  color: #666;
+  padding: 40px 20px;
+  font-size: 1.1em;
+  color: #555;
+  flex-grow: 1; /* Take space if content is not loaded */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.profile-content {
-  text-align: center;
+.error-message { color: #d9534f; }
+
+.profile-content-scrollable {
+  flex-grow: 1; /* Allow this area to grow and shrink */
+  overflow-y: auto; /* Enable vertical scrolling for this section */
+  padding: 15px;
+  display: flex;
+  flex-direction: column; /* Stack main layout and order history */
 }
-.rider-avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 1rem;
-  border: 3px solid #eee;
+
+.profile-main-layout {
+  display: flex;
+  flex-direction: row; /* Left and Right columns side-by-side */
+  gap: 15px;
+  margin-bottom: 20px; /* Space before order history */
+  background-color: #fff; /* Card-like background for this section */
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-.profile-content h2 {
-  font-size: 1.8rem;
-  margin: 0.5rem 0;
+
+.left-column {
+  flex: 1.2; /* Give left column slightly more space, adjust as needed */
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Space between RiderInfoCard and RiderStatsPanel */
 }
-.profile-content p {
-  font-size: 1rem;
-  color: #333;
-  margin: 0.5rem 0;
-  line-height: 1.6;
+
+.right-column {
+  flex: 0.8; /* Give right column slightly less space */
+  display: flex; /* To help center WordCloud if its height is less than left column */
+  height: 100%; /* Full height of the parent */
+  align-items: flex-start; /* Align word cloud to the top */
 }
-.chat-button {
-  margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
+
+/* RiderOrderHistory will naturally take full width below the profile-main-layout */
+
+.profile-actions {
+  position: sticky; /* Make footer sticky at the bottom of the viewport */
+  bottom: 0;
+  left: 0; /* Necessary for sticky within its parent if parent is not body */
+  right: 0;
+  max-width: 500px; /* Match page max-width */
+  margin: 0 auto; /* Center it if page is wider */
+  display: flex;
+  justify-content: space-around;
+  background-color: #ffffff;
+  padding: 12px 10px;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+  z-index: 100; /* Ensure it's above scrollable content */
+  flex-shrink: 0; /* Prevent footer from shrinking */
 }
-.chat-button:hover {
-  background-color: #218838;
-}
+/* Action button styles from previous example are fine */
+.action-button { flex-grow: 1; margin: 0 5px; padding: 10px 12px; font-size: 0.9em; border: 1px solid #ccc; border-radius: 20px; background-color: #f8f9fa; color: #333; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+.action-button svg { margin-right: 6px; }
+.action-button:hover { background-color: #e9ecef; border-color: #bbb; }
+.action-button.block { color: #dc3545; border-color: #dc3545; }
+.action-button.block:hover { background-color: #dc3545; color: white; }
+.action-button.contact { color: #007bff; border-color: #007bff; }
+.action-button.contact:hover { background-color: #007bff; color: white; }
+.action-button.like { color: #28a745; border-color: #28a745; }
+.action-button.like.liked { background-color: #28a745; color: white; }
+.action-button.like:hover:not(.liked) { background-color: #28a745; color: white; }
 </style>

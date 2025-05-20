@@ -16,6 +16,7 @@
         @click="navigateToChat(chat.id)"
       />
     </ul>
+    <BottomNav />
   </div>
 </template>
 <script setup>
@@ -27,6 +28,7 @@ import MessagesHeader from '@/components/Header/MessagesHead.vue'
 import MessageListItem from '@/components/Message/MessageListItem.vue'
 import LoadingSpinner from '@/components/UI/LoadingSpinner.vue'
 import EmptyState from '@/components/UI/EmptyState.vue'
+import BottomNav from '@/components/BottomNav.vue'
 
 const router = useRouter()
 const chatList = ref([])

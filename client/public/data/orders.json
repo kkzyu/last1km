@@ -1,0 +1,50 @@
+{
+  "user_abc": {
+    "rider_1": [
+      {
+        "orderId": "order_1001",
+        "date": "2023-10-25T12:30:00Z",
+        "restaurantName": "美味快餐店",
+        "items": ["香辣鸡腿堡套餐", "可乐"],
+        "totalAmount": 35.50,
+        "userReview": {
+          "rating": 5,
+          "comment": "送餐非常快，小哥态度也很好！"
+        }
+      },
+      {
+        "orderId": "order_1005",
+        "date": "2023-10-27T18:00:00Z",
+        "restaurantName": "健康沙拉吧",
+        "items": ["鸡胸肉沙拉", "鲜榨橙汁"],
+        "totalAmount": 42.00,
+        "userReview": null
+      }
+    ],
+    "rider_2": [
+      {
+        "orderId": "order_1002",
+        "date": "2023-10-26T19:15:00Z",
+        "restaurantName": "深夜食堂",
+        "items": ["日式拉面"],
+        "totalAmount": 28.00,
+        "userReview": {
+          "rating": 4,
+          "comment": "稍微晚了一点点，但态度不错。"
+        }
+      }
+    ]
+  },
+  "user_xyz": {
+     "rider_1": [
+      {
+        "orderId": "order_2001",
+        "date": "2023-11-01T13:00:00Z",
+        "restaurantName": "披萨工坊",
+        "items": ["夏威夷披萨 (大)", "鸡翅"],
+        "totalAmount": 78.00,
+        "userReview": null
+      }
+    ]
+  }
+}

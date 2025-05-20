@@ -1,6 +1,6 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import BottomNav from '@/components/BottomNav.vue'
+
 </script>
 
 <template>
@@ -9,7 +9,6 @@ import BottomNav from '@/components/BottomNav.vue'
     <div class="content-container">
       <RouterView />
     </div>
-    <BottomNav />
   </div>
 </template>
 
