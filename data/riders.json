@@ -1,0 +1,78 @@
+
+{
+  "rider_1": {
+    "id": "rider_1",
+    "name": "送餐员喜多郁代",
+    "avatar": "/images/avatar1.jpg", 
+    "stats": {
+      "onTimeRate": 0.98,
+      "positiveFeedbackRate": 0.95,
+      "averageDailyOrders": 35,
+      "likeCount": 1250,
+      "reviewKeywords": [
+        { "text": "速度快", "weight": 5, "sentiment": "positive" },
+        { "text": "态度好", "weight": 4, "sentiment": "positive" },
+        { "text": "准时", "weight": 4, "sentiment": "positive" },
+        { "text": "专业", "weight": 3, "sentiment": "positive" },
+        { "text": "餐品完好", "weight": 3, "sentiment": "positive" },
+        { "text": "礼貌", "weight": 2, "sentiment": "positive" },
+        { "text": "高效", "weight": 3, "sentiment": "positive" },
+        { "text": "有点慢", "weight": 2, "sentiment": "negative" },
+        { "text": "包装洒了", "weight": 1, "sentiment": "negative" }
+      ]
+    }
+  },
+  "rider_2": {
+    "id": "rider_2",
+    "name": "送餐员波奇",
+    "avatar": "/images/avatar2.jpg",
+    "stats": {
+      "onTimeRate": 0.92,
+      "positiveFeedbackRate": 0.88,
+      "averageDailyOrders": 28,
+      "likeCount": 890,
+      "reviewKeywords": [
+        { "text": "细心", "weight": 4, "sentiment": "positive" },
+        { "text": "安静", "weight": 3, "sentiment": "neutral" },
+        { "text": "略慢", "weight": 3, "sentiment": "negative" },
+        { "text": "餐品保温好", "weight": 4, "sentiment": "positive" },
+        { "text": "路线不熟", "weight": 2, "sentiment": "negative" }
+      ]
+    }
+  },
+  "rider_3": {
+    "id": "rider_3",
+    "name": "送餐员凉",
+    "avatar": "/images/avatar3.jpg",
+    "stats": {
+      "onTimeRate": 0.95,
+      "positiveFeedbackRate": 0.92,
+      "averageDailyOrders": 30,
+      "likeCount": 1050,
+      "reviewKeywords": [
+        { "text": "冷静", "weight": 3, "sentiment": "neutral" },
+        { "text": "效率高", "weight": 4, "sentiment": "positive" },
+        { "text": "话不多", "weight": 2, "sentiment": "neutral" },
+        { "text": "找零快", "weight": 3, "sentiment": "positive" }
+      ]
+    }
+  },
+  "rider_4": {
+    "id": "rider_4",
+    "name": "送餐员虹夏",
+    "avatar": "/images/avatar4.jpg",
+    "stats": {
+      "onTimeRate": 0.99,
+      "positiveFeedbackRate": 0.97,
+      "averageDailyOrders": 40,
+      "likeCount": 1500,
+      "reviewKeywords": [
+        { "text": "非常准时", "weight": 5, "sentiment": "positive" },
+        { "text": "亲切", "weight": 4, "sentiment": "positive" },
+        { "text": "可靠", "weight": 5, "sentiment": "positive" },
+        { "text": "沟通顺畅", "weight": 3, "sentiment": "positive" },
+        { "text": "笑容好", "weight": 3, "sentiment": "positive" }
+      ]
+    }
+  }
+}

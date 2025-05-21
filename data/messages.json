@@ -1,0 +1,45 @@
+{
+  "chat_rider_1": {
+    "rider": {
+      "id": "rider_1",
+      "name": "送餐员喜多郁代",
+      "avatar": "/images/avatar1.jpg"
+    },
+    "messages": [
+      { "id": "msg1", "text": "您好，您的订单已接单，正在火速赶往目的地。", "sender": "rider", "timestamp": "2023-10-26T10:00:00.000Z" },
+      { "id": "msg2", "text": "好的，谢谢！", "sender": "user", "timestamp": "2023-10-26T10:01:00.000Z" },
+      { "id": "msg3", "text": "您的外卖已经送至青溪4舍711，请及时领取~", "sender": "rider", "timestamp": "2023-10-26T10:05:00.000Z" }
+    ]
+  },
+  "chat_rider_2": {
+    "rider": {
+      "id": "rider_2",
+      "name": "送餐员波奇",
+      "avatar": "/images/avatar2.jpg"
+    },
+    "messages": [
+      { "id": "msg4", "text": "您好，外卖放到青溪4舍了。", "sender": "rider", "timestamp": "2023-10-26T08:30:00.000Z" },
+      { "id": "msg5", "text": "请及时领取…谢谢！", "sender": "rider", "timestamp": "2023-10-26T08:30:00.000Z" }
+    ]
+  },
+  "chat_rider_3": {
+    "rider": {
+      "id": "rider_3",
+      "name": "送餐员凉",
+      "avatar": "/images/avatar3.jpg"
+    },
+    "messages": [
+      { "id": "msg6", "text": "711。取。", "sender": "rider", "timestamp": "2023-10-26T09:58:00.000Z" }
+    ]
+  },
+  "chat_rider_4": {
+    "rider": {
+      "id": "rider_4",
+      "name": "送餐员虹夏",
+      "avatar": "/images/avatar4.jpg"
+    },
+    "messages": [
+      { "id": "msg7", "text": "您的外卖已经送至青溪4舍楼下寄存点，请及时领取~", "sender": "rider", "timestamp": "2023-10-26T09:58:00.000Z" }
+    ]
+  }
+}
