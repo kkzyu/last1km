@@ -1,5 +1,6 @@
 {
   "name": "client",
+  "homepage": "https://kkzyu.github.io/last1km",
   "version": "0.0.0",
   "private": true,
   "type": "module",

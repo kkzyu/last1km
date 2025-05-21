@@ -67,24 +67,49 @@ const isOrdersLoading = ref(true);
 const ordersError = ref(null);
 
 const isLikedByCurrentUser = ref(false);
+const BASE_URL = import.meta.env.BASE_URL;
 
 const CURRENT_USER_ID = 'user_abc';
 const riderId = computed(() => route.params.riderId || 'rider_1');
+
+const resolveAssetPath = (relativePath) => {
+  if (!relativePath) return undefined;
+  // Ensure no double slashes if relativePath starts with '/' and BASE_URL ends with '/'
+  let path = relativePath;
+  if (BASE_URL.endsWith('/') && path.startsWith('/')) {
+    path = path.substring(1);
+  } else if (!BASE_URL.endsWith('/') && !path.startsWith('/')) {
+    // This case is unlikely if BASE_URL is like '/last1km/' and path is like 'images/foo.jpg'
+    // but good to be mindful. For your JSON paths like "/images/avatar.jpg",
+    // the first condition (substring(1)) is what we need.
+    // If json path was "images/avatar.jpg", then direct concatenation is fine.
+  }
+  return `${BASE_URL}${path}`;
+};
 
 async function fetchRiderData() {
   isLoading.value = true;
   error.value = null;
   try {
-    const response = await fetch('/data/riders.json');
+    const fetchPath = 'data/riders.json';
+     const response = await fetch(`${BASE_URL}${fetchPath}`);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const allRiders = await response.json();
-    if (allRiders[riderId.value]) {
-      rider.value = { ...allRiders[riderId.value] };
+    const riderDataFromServer = allRiders[riderId.value];
+
+    if (riderDataFromServer) {
+      rider.value = {
+        ...riderDataFromServer,
+        // 1. Resolve the avatar path here
+        avatar: riderDataFromServer.avatar ? resolveAssetPath(riderDataFromServer.avatar) : undefined
+      };
+      // Initialize stats if not present
       if (!rider.value.stats) rider.value.stats = { likeCount: 0, reviewKeywords: [] };
       if (!rider.value.stats.reviewKeywords) rider.value.stats.reviewKeywords = [];
+      
       isLikedByCurrentUser.value = localStorage.getItem(`liked_rider_${riderId.value}`) === 'true';
     } else {
-      throw new Error('Rider not found');
+      throw new Error(`Rider with ID ${riderId.value} not found in riders.json`);
     }
   } catch (e) {
     console.error("Failed to fetch rider data:", e);
@@ -100,7 +125,8 @@ async function fetchRiderOrderHistory() {
   isOrdersLoading.value = true;
   ordersError.value = null;
   try {
-    const response = await fetch('/data/orders.json');
+    const fetchOrdersPath = 'data/orders.json';
+    const response = await fetch(`${BASE_URL}${fetchOrdersPath}`); 
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const allOrders = await response.json();
     if (allOrders[CURRENT_USER_ID] && allOrders[CURRENT_USER_ID][riderId.value]) {
@@ -121,7 +147,7 @@ async function fetchRiderOrderHistory() {
 
 onMounted(async () => {
   await fetchRiderData();
-  if (rider.value) {
+  if (rider.value && !error.value) {
     await fetchRiderOrderHistory();
   }
 });

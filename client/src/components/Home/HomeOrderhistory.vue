@@ -91,13 +91,19 @@ defineProps({
 
 
 const emit = defineEmits(['publish', 'cancel', 'review', 'restore', 'image-error'])
-
+const BASE_URL = import.meta.env.BASE_URL;
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath) {
-    return '' // Return empty string if no path is provided
+if (!imagePath || typeof imagePath !== 'string') {
+    return '';
   }
-  return imagePath
+
+  if (BASE_URL === '/') {
+    return imagePath;
+  }
+
+  const cleanBase = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+  return `${cleanBase}${imagePath}`;
 }
 
 // 添加图片错误处理函数

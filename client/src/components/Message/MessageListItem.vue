@@ -1,6 +1,6 @@
 <template>
   <li class="message-list-item">
-    <img :src="chat.rider.avatar" :alt="chat.rider.name" class="avatar" @click.stop="navigateToRiderProfile(chat.rider.id)"/>
+    <img :src="fullAvatarUrl" :alt="chat.rider.name" class="avatar" @click.stop="navigateToRiderProfile(chat.rider.id)"/>
     <div class="message-content">
       <div class="info-header">
         <span class="rider-name">{{ chat.rider.name }}</span>
@@ -24,6 +24,28 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const BASE_URL = import.meta.env.BASE_URL;
+
+const fullAvatarUrl = computed(() => {
+  const avatarPath = props.chat.rider.avatar; // 例如 "/images/avatar1.jpg"
+
+  // 如果 avatarPath 为空或不是字符串，返回一个占位符或空字符串
+  if (!avatarPath || typeof avatarPath !== 'string') {
+    return ''; // 或者一个默认的占位符图片路径
+  }
+
+  // 如果 BASE_URL 是根路径 ('/'), 那么 avatarPath 已经是正确的
+  if (BASE_URL === '/') {
+    return avatarPath;
+  }
+
+  // 否则，我们需要将 BASE_URL 和 avatarPath 拼接起来
+  // 确保 BASE_URL 没有尾部斜杠，因为 avatarPath 已经以斜杠开头
+  const cleanBase = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+
+  // 拼接：例如 "/last1km" + "/images/avatar1.jpg" = "/last1km/images/avatar1.jpg"
+  return `${cleanBase}${avatarPath}`;
+});
 
 const formattedTimestamp = computed(() => {
   const date = new Date(props.chat.timestamp);

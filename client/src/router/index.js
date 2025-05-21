@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router';
 
 // Main views
 const HomeView = () => import('@/views/Home/HomeView.vue')
@@ -151,7 +151,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes,
   // Better scroll behavior
   scrollBehavior(to, from, savedPosition) {

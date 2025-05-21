@@ -16,7 +16,7 @@
         </div>
         <h2 class="rider-name-header">{{ chatInfo?.rider?.name || '加载中...' }}</h2>
       </div>
-      <div class="header-actions-placeholder"></div> <!-- Balances the back button for centering -->
+      <div class="header-actions-placeholder"></div>
     </header>
 
     <div v-if="isLoading" class="status-message loading">
@@ -51,7 +51,7 @@
         @keyup.enter="sendMessage"
         class="message-input"
       />
-      <button @click="sendMessage" :disabled="!newMessage.trim()" class="send-button" aria-label="发送">
+      <button @click="sendMessage" :disabled="!newMessage.trim() || !chatInfo?.rider" class="send-button" aria-label="发送">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
       </button>
     </footer>
@@ -78,6 +78,7 @@ const messages = ref([]);
 const newMessage = ref('');
 const isLoading = ref(true);
 const messagesContainerRef = ref(null);
+const BASE_URL = import.meta.env.BASE_URL;
 
 const RIDER_REPLIES = [
   "好的，我马上到！",
@@ -87,42 +88,63 @@ const RIDER_REPLIES = [
   "感谢您的耐心等待",
   "我找不到具体位置，能发个定位吗？"
 ];
-
+// Helper function to resolve asset paths correctly with the base URL
+const resolveAssetPath = (relativePath) => {
+  if (!relativePath) return undefined;
+  // Ensure no double slashes if relativePath starts with '/' and BASE_URL ends with '/'
+  let path = relativePath;
+  if (BASE_URL.endsWith('/') && path.startsWith('/')) {
+    path = path.substring(1);
+  } else if (!BASE_URL.endsWith('/') && !path.startsWith('/')) {
+    // This case is unlikely if BASE_URL is like '/last1km/' and path is like 'images/foo.jpg'
+    // but good to be mindful. For your JSON paths like "/images/avatar.jpg",
+    // the first condition (substring(1)) is what we need.
+    // If json path was "images/avatar.jpg", then direct concatenation is fine.
+  }
+  return `${BASE_URL}${path}`;
+};
 const fetchChatDetails = async (id) => {
   isLoading.value = true;
   chatInfo.value = null; 
   messages.value = [];   
 
   try {
-    const response = await fetch('/data/messages.json'); 
+    const fetchPath = 'data/messages.json'; // Path relative to public directory
+    const response = await fetch(`${BASE_URL}${fetchPath}`);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const allChatsData = await response.json();
     const currentChatData = allChatsData[id];
 
-    if (currentChatData) {
+     const riderData = currentChatData.rider ? {
+        ...currentChatData.rider,
+        // chatInfo.rider.avatar 的值如 "/images/avatar1.jpg"
+        // resolveAssetPath会处理它，变成 "/last1km/images/avatar1.jpg"
+        avatar: currentChatData.rider.avatar ? resolveAssetPath(currentChatData.rider.avatar) : undefined
+      } : null;
+
       chatInfo.value = {
         id: id,
-        rider: currentChatData.rider,
+        rider: riderData,
       };
       messages.value = currentChatData.messages.map(msg => ({
         ...msg,
         timestamp: new Date(msg.timestamp)
       }));
-      
-      // 如果初始没有消息，模拟一条骑手的欢迎消息
-      if (messages.value.length === 0) {
+
+      if (messages.value.length === 0 && chatInfo.value?.rider) { // Check if rider info is available before simulating welcome
         simulateWelcomeMessage();
       }
-    } else {
+    else {
       console.error(`Chat with id ${id} not found in messages.json`);
     }
   } catch (error) {
     console.error("Failed to fetch chat details:", error);
   } finally {
     isLoading.value = false;
-    await nextTick(); 
+    await nextTick();
     scrollToBottom();
   }
 };

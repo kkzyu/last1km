@@ -88,7 +88,7 @@ const handleCheckout = () => {
 
 .checkout-bar-content {
   width: 100%;
-  max-width: 500px; /* Match parent's max-width */
+  max-width: 390px; /* Match parent's max-width */
   background-color: #fff;
   padding: 10px 15px;
   display: flex;

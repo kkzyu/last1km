@@ -4,7 +4,6 @@
       <h4>订单号: {{ order.orderId }}</h4>
       <span>{{ formatDate(order.date) }}</span>
     </div>
-    <p><strong>餐厅:</strong> {{ order.restaurantName }}</p>
     <p><strong>商品:</strong> {{ order.items.join(', ') }}</p>
     <p><strong>金额:</strong> ¥{{ order.totalAmount.toFixed(2) }}</p>
 

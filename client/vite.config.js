@@ -6,6 +6,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base:'/last1km/',
   plugins: [
     vue(),
     vueDevTools(),
@@ -13,7 +14,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '/': fileURLToPath(new URL('./public', import.meta.url)),
     },
   },
 })
