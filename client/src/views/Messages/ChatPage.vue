@@ -144,7 +144,7 @@ const goBack = () => {
 
 const navigateToRiderProfile = () => {
   if (chatInfo.value?.rider?.id) {
-    router.push({ name: 'RiderProfilePage', params: { riderId: chatInfo.value.rider.id } });
+    router.push({ name: 'rider-profile', params: { riderId: chatInfo.value.rider.id } });
   }
 };
 

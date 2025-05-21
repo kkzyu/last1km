@@ -76,7 +76,7 @@ const navigateToChat = (chatId) => {
   if (chat) {
     chat.unreadCount = 0;
   }
-  router.push({ name: 'ChatPage', params: { chatId } });
+  router.push({ name: 'chat', params: { chatId } });
 };
 </script>
 <style scoped>

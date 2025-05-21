@@ -71,7 +71,6 @@
               >
                 恢复订单
               </button>
-              <!-- 原有按钮保持不变 -->
             </div>
           </div>
         </div>
@@ -94,16 +93,11 @@ defineProps({
 const emit = defineEmits(['publish', 'cancel', 'review', 'restore', 'image-error'])
 
 
-const getImageUrl = (path) => {
-  if (!path) return ''
-
-  try {
-    // 使用Vite推荐的资源路径处理方式
-    return new URL(`/images/${path}`, import.meta.url).href
-  } catch (error) {
-    console.error('图片路径解析错误:', error)
-    return ''
+const getImageUrl = (imagePath) => {
+  if (!imagePath) {
+    return '' // Return empty string if no path is provided
   }
+  return imagePath
 }
 
 // 添加图片错误处理函数

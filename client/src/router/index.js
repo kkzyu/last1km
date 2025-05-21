@@ -33,6 +33,14 @@ const routes = [
     }
   },
   {
+    path: '/publish',
+    name: 'publish',
+    component: () => import('@/views/Home/PublishView.vue'),
+    meta: {
+      title: '发布委托'
+    }
+  },
+  {
     path: '/login',
     name: 'login',
     component: LoginView,

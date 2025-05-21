@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import information from '@/assets/data/information.json'
+import information from '@/assets/information.json'
 
 export const useOrderStore = defineStore('order', () => {
   const activeTab = ref('home')

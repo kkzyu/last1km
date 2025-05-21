@@ -2,26 +2,44 @@
   <HomeHead />
   <div class="home-page">
     <HomeCarousel />
-    <OrderHistory :grouped-orders="groupedOrders" @publish="publishNewOrder" @cancel="cancelOrder"
-      @review="reviewOrder" />
+    <OrderHistory 
+      :grouped-orders="groupedOrders"
+      @publish="publishNewOrder"
+      @cancel="cancelOrder"
+      @restore="restoreOrder"  
+      @review="reviewOrder"
+    />
   </div>
   <BottomNav />
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'  // 添加路由导入
+
+const router = useRouter()  // 获取路由实例
+
 import information from '@/assets/data/information.json'
 import HomeCarousel from '@/components/Home/HomeCarousel.vue'
 import OrderHistory from '@/components/Home/HomeOrderhistory.vue'
 import HomeHead from '@/components/Header/HomeHead.vue'
 import BottomNav from '@/components/Bottom/BottomNav.vue'
 
-// 状态管理
 const activeTab = ref('home')
 const orders = ref([])
 const imageFailed = ref(false)
 
-// 计算属性
+// 从localStorage加载订单数据
+const loadOrders = () => {
+  const savedOrders = localStorage.getItem('orders')
+  orders.value = savedOrders ? JSON.parse(savedOrders) : information.orders
+}
+
+// 保存订单到localStorage
+const saveOrders = () => {
+  localStorage.setItem('orders', JSON.stringify(orders.value))
+}
+
 const groupedOrders = computed(() => {
   const groups = {}
   orders.value.forEach(order => {
@@ -33,18 +51,28 @@ const groupedOrders = computed(() => {
   return groups
 })
 
-// 生命周期钩子
 onMounted(() => {
-  orders.value = information.orders
+  loadOrders()
 })
 
-// 事件处理函数
-const handleTabChange = (tab) => {
-  console.log('切换到标签:', tab)
+const cancelOrder = (orderId) => {
+  const order = orders.value.find(o => o.id === orderId)
+  if (order && order.status === '进行中') {
+    order.status = '已取消'
+    order.description = "已取消" 
+    order.eta = null
+    saveOrders()
+  }
 }
 
-const cancelOrder = (orderId) => {
-  console.log('取消订单:', orderId)
+const restoreOrder = (orderId) => {
+  const order = orders.value.find(o => o.id === orderId)
+  if (order && order.status === '已取消') {
+    order.status = '进行中'
+    order.description = ""  // 恢复描述为空
+    order.eta = 20  // 恢复预计时间
+    saveOrders()
+  }
 }
 
 const reviewOrder = (orderId) => {
@@ -52,7 +80,7 @@ const reviewOrder = (orderId) => {
 }
 
 const publishNewOrder = () => {
-  console.log('发布新委托')
+  router.push('/publish') // 修改为正确的小写router
 }
 
 const handleImageError = () => {
@@ -61,39 +89,16 @@ const handleImageError = () => {
 </script>
 
 <style scoped>
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 750px;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.content-container {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-
-}
-
 .home-page {
+  font-family: sans-serif;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow-y: auto;
-  /* 启用整体滚动 */
+  height: 100%;
+  background-color: #f4f4f4;
+  overflow: hidden; 
 }
 
-.scrolling-banner {
-  width: 100%;
-  margin-bottom: 20px;
-  /* 添加与内容的间距 */
-}
-
-/* 订单历史容器调整 */
-.home-page> :last-child {
-  flex: 1;
-  min-height: 0;
-  /* 允许内容收缩 */
+.home-page > :first-child {
+  flex-shrink: 0; 
 }
 </style>

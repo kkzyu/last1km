@@ -36,7 +36,7 @@ const formattedTimestamp = computed(() => {
 });
 
 const navigateToRiderProfile = (riderId) => {
-  router.push({ name: 'RiderProfilePage', params: { riderId } });
+  router.push({ name: 'rider-profile', params: { riderId } });
 };
 </script>
 
