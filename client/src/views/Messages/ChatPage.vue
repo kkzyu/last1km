@@ -59,8 +59,6 @@
 </template>
 
 <script setup>
-// ... (your existing script setup, but make sure fetchChatDetails is updated as above)
-// Ensure you import ChatBubble, ref, onMounted, nextTick, watch, useRoute, useRouter
 import { ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ChatBubble from '@/components/Message/ChatBubble.vue';
@@ -81,8 +79,16 @@ const newMessage = ref('');
 const isLoading = ref(true);
 const messagesContainerRef = ref(null);
 
+const RIDER_REPLIES = [
+  "好的，我马上到！",
+  "请稍等，大约5分钟后到达",
+  "我已经在路上了",
+  "请问具体在哪个位置？",
+  "感谢您的耐心等待",
+  "我找不到具体位置，能发个定位吗？"
+];
+
 const fetchChatDetails = async (id) => {
-  // ... (implementation from section I.2) ...
   isLoading.value = true;
   chatInfo.value = null; 
   messages.value = [];   
@@ -104,6 +110,11 @@ const fetchChatDetails = async (id) => {
         ...msg,
         timestamp: new Date(msg.timestamp)
       }));
+      
+      // 如果初始没有消息，模拟一条骑手的欢迎消息
+      if (messages.value.length === 0) {
+        simulateWelcomeMessage();
+      }
     } else {
       console.error(`Chat with id ${id} not found in messages.json`);
     }
@@ -116,8 +127,21 @@ const fetchChatDetails = async (id) => {
   }
 };
 
+// 模拟欢迎消息
+const simulateWelcomeMessage = () => {
+  const welcomeMsg = {
+    id: `msg_${Date.now()}`,
+    text: '您好，我是您的骑手，请告诉我您的具体位置',
+    sender: 'rider',
+    timestamp: new Date(),
+  };
+  messages.value.push(welcomeMsg);
+};
+
 const sendMessage = () => {
   if (!newMessage.value.trim()) return;
+  
+  // 用户发送的消息
   const message = {
     id: `msg_${Date.now()}`,
     text: newMessage.value,
@@ -127,7 +151,26 @@ const sendMessage = () => {
   messages.value.push(message);
   newMessage.value = '';
   scrollToBottom();
-  // console.log('Sending message:', message); // For real app, send to backend
+  
+  // 模拟骑手回复
+  simulateReply();
+};
+
+// 模拟骑手回复
+const simulateReply = () => {
+  const delay = 1000 + Math.random() * 2000; // 1-3秒随机延迟
+  
+  setTimeout(() => {
+    const randomIndex = Math.floor(Math.random() * RIDER_REPLIES.length);
+    const reply = {
+      id: `msg_${Date.now()}`,
+      text: RIDER_REPLIES[randomIndex],
+      sender: 'rider',
+      timestamp: new Date(),
+    };
+    messages.value.push(reply);
+    scrollToBottom();
+  }, delay);
 };
 
 const scrollToBottom = () => {
@@ -159,12 +202,13 @@ watch(() => props.chatId, (newChatId) => {
 });
 </script>
 
+
 <style scoped>
 .chat-page {
   display: flex;
   flex-direction: column;
   height: 100%; /* Full viewport height */
-  max-width: 500px; /* Max width for chat interface */
+  max-width: 390px; /* Max width for chat interface */
   margin: 0 auto; /* Center on larger screens */
   background-color: #f0f2f5; /* A slightly off-white background */
   border-left: 1px solid #e0e0e0; /* Optional border */
@@ -305,7 +349,7 @@ watch(() => props.chatId, (newChatId) => {
   bottom: 0;
   left: 0;
   right: 0;
-  max-width: 470px; /* Match page max-width */
+  max-width: 360px; /* Match page max-width */
   margin: 0 auto; /* Center it */
   align-items: center;
   padding: 10px 16px;

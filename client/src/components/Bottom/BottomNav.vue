@@ -35,7 +35,7 @@ const $route = useRoute()
 .bottom-nav {
   display: flex;
   justify-content: space-around;
-  max-width: 500px;
+  max-width: 390px;
   margin: 0 auto;
   align-items: center;
   background-color: #ffffff;

@@ -159,7 +159,7 @@ const handleOrderReviewed = (reviewDetails) => {
 .rider-profile-page {
   display: flex;
   flex-direction: column;
-  height: 750px;
+  height: 900px;
   /* Full viewport height */
   max-width: 500px;
   margin: 0 auto;
@@ -216,7 +216,21 @@ const handleOrderReviewed = (reviewDetails) => {
   width: 40px;
   flex-shrink: 0;
 }
+.profile-content-scrollable {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
 
+/* Chrome/Safari/Opera */
+.profile-content-scrollable::-webkit-scrollbar {
+  display: none;
+}
 .loading-indicator,
 .error-message,
 .not-found {
@@ -283,7 +297,7 @@ const handleOrderReviewed = (reviewDetails) => {
   /* Necessary for sticky within its parent if parent is not body */
   right: 0;
   width:100%;
-  max-width: 480px;
+  max-width: 370px;
   /* Match page max-width */
   margin: 0 auto;
   /* Center it if page is wider */

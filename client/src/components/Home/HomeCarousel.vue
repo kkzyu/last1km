@@ -70,13 +70,16 @@ const handleImageError = (index) => {
 
 <style scoped>
 .carousel-section {
-  height: 150px;
+  height: 100px;
   /* width: 700px; */
   position: relative;
   overflow: hidden; /* 隐藏溢出内容 */
   border-radius: 20px; /* 圆角 */
   box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* 阴影 */
-  margin:25px;
+  margin-right:45px ;
+  margin-left:45px ;
+  margin-top:10px ;
+  margin-bottom:10px ;
 }
 
 .carousel-item {
