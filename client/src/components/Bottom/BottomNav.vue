@@ -31,46 +31,50 @@ const $route = useRoute()
 </script>
 
 <style scoped>
-/* 复制原有的底部导航栏样式 */
 .bottom-nav {
   display: flex;
   justify-content: space-around;
   max-width: 390px;
   margin: 0 auto;
   align-items: center;
-  background-color: #ffffff;
-  border-top: 1px solid #e0e0e0;
-  padding: 10px 0;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 15px 0;
   position: fixed;
   bottom: 0;
   width: 100%;
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1);
 }
-.bottom-nav .nav-item {
+
+.nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 0.8em;
-  color: #757575;
-  cursor: pointer;
-  position: relative;
+  font-size: 12px;
+  color: #86868b;
+  transition: all 0.2s ease;
 }
-.bottom-nav .nav-item.active {
-  color: #1976D2;
+
+.nav-item.active {
+  color: #000000;
 }
-.bottom-nav .nav-item .icon {
-  font-size: 1.5em;
-  margin-bottom: 3px;
+
+.nav-item .icon {
+  font-size: 22px;
+  margin-bottom: 4px;
+  transition: transform 0.2s ease;
 }
-.bottom-nav .nav-item .badge {
-  position: absolute;
-  top: -5px;
-  right: -8px;
-  background-color: red;
-  color: white;
-  border-radius: 50%;
-  padding: 2px 5px;
-  font-size: 0.7em;
-  font-weight: bold;
+
+.nav-item:hover .icon {
+  transform: scale(1.1);
+}
+
+.nav-item .badge {
+  background-color: #ff3b30;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
 }
 </style>
