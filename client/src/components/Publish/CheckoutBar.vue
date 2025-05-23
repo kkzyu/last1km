@@ -75,7 +75,7 @@ const handleCheckout = () => {
 
 <style scoped>
 .checkout-bar-container {
-  position: absolute;
+  position: fixed;
   /* Assuming global BottomNav is ~60px. CheckoutBar sits above it. */
   /* If no global BottomNav, use bottom: 0; */
   bottom: 0px; 

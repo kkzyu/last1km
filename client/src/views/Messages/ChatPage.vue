@@ -284,11 +284,18 @@ watch(() => chatStore.isLoadingChat, (loading) => {
 
 .chat-input-area {
   display: flex;
+  justify-content: space-around;
+  max-width: 390px;
+  margin: 0 auto;
   align-items: center;
   padding: 12px 16px;
   border-top: 1px solid var(--chat-border-color);
   background-color: var(--chat-footer-bg);
   flex-shrink: 0;
+  /* padding: 15px 0; */
+  position: fixed;
+  bottom: 0;
+  width: 100%;
 }
 .chat-input-area.disabled-input-area .ant-input {
     cursor: not-allowed;

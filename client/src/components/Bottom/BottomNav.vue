@@ -41,7 +41,7 @@ const $route = useRoute()
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 15px 0;
-  position: absolute;
+  position: fixed;
   bottom: 0;
   width: 100%;
   box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1);
