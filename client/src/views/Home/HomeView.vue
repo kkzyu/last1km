@@ -88,8 +88,20 @@ const handleImageError = () => {
 }
 </script>
 
+
+
 <style scoped>
+
+* {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .home-page {
+  background-color: #f5f5f7;
+  min-height: 100vh;
+  position: relative;
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
