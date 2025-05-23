@@ -1,6 +1,6 @@
 <template>
   <div class="word-cloud-square-card">
-    <h4>用户评价</h4>
+    <!-- <h4>用户评价</h4> -->
     <div v-if="keywords && keywords.length" class="keywords-container">
       <span v-for="keyword in sortedKeywords" :key="keyword.text" class="keyword-tag"
         :class="getSentimentClass(keyword.sentiment)" :style="getKeywordStyle(keyword.weight)">

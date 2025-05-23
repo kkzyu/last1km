@@ -2,7 +2,6 @@
   <div class="rider-info-card">
     <img :src="rider.avatar || '/avatars/default.png'" alt="Rider Avatar" class="rider-avatar-display">
     <h3 class="rider-name-display">{{ rider.name }}</h3>
-    <p v-if="rider.bio" class="rider-bio-display">{{ rider.bio }}</p>
   </div>
 </template>
 
@@ -37,7 +36,8 @@ defineProps({
 .rider-name-display {
   margin: 0 ;
   color: #2c3e50;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 16px;
 }
 
 </style>

@@ -1,95 +1,71 @@
 <template>
   <div class="messages-home">
     <MessagesHeader 
-      :has-unread-messages="hasUnreadMessages"
-      @mark-all-read="markAllAsRead"
+      :has-unread-messages="messagesStore.hasUnreadMessages"
+      @mark-all-read="messagesStore.markAllAsRead"
     />
 
-    <LoadingSpinner v-if="isLoading" />
-    <EmptyState v-else-if="chatList.length === 0" />
-    
-    <ul v-else class="chat-list">
-      <MessageListItem
-        v-for="chat in sortedChatList"
-        :key="chat.id"
-        :chat="chat"
-        @click="navigateToChat(chat.id)"
-      />
-    </ul>
+    <a-spin :spinning="messagesStore.isLoading" tip="加载中...">
+      <div v-if="!messagesStore.isLoading && messagesStore.sortedChatList.length === 0" class="empty-state-container">
+        <a-empty description="暂无消息" />
+      </div>
+      <a-list
+        v-else-if="!messagesStore.isLoading"
+        class="chat-list"
+        item-layout="horizontal"
+        :data-source="messagesStore.sortedChatList"
+      >
+        <template #renderItem="{ item }">
+          <MessageListItem
+            :chat="item"
+            @click="messagesStore.navigateToChat(item.id)"
+          />
+        </template>
+      </a-list>
+    </a-spin>
     <BottomNav />
   </div>
 </template>
+
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import riders from '@/assets/data/riders.json'
-import chats from '@/assets/data/chats.json'
-import MessagesHeader from '@/components/Header/MessagesHead.vue'
-import MessageListItem from '@/components/Message/MessageListItem.vue'
-import LoadingSpinner from '@/components/UI/LoadingSpinner.vue'
-import EmptyState from '@/components/UI/EmptyState.vue'
-import BottomNav from '@/components/Bottom/BottomNav.vue'
+import { onMounted } from 'vue';
+import { useMessagesStore } from '@/stores/messages';
+import MessagesHeader from '@/components/Header/MessagesHead.vue';
+import MessageListItem from '@/components/Message/MessageListItem.vue';
+import BottomNav from '@/components/Bottom/BottomNav.vue';
+import { List as AList, Spin as ASpin, Empty as AEmpty } from 'ant-design-vue';
 
-const router = useRouter()
-const chatList = ref([])
-const isLoading = ref(true)
-
-const fetchChatList = async () => {
-  isLoading.value = true
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  chatList.value = chats.map(chat => ({
-    ...chat,
-    rider: riders.find(r => r.id === chat.riderId),
-    timestamp: new Date(Date.now() - chat.minutesAgo * 60 * 1000).toISOString()
-  }))
-
-  isLoading.value = false
-};
-
-// 保持原有计算属性和方法不变
-const sortedChatList = computed(() => {
-  return [...chatList.value].sort((a, b) => 
-    new Date(b.timestamp) - new Date(a.timestamp)
-  )
-})
-
-const hasUnreadMessages = computed(() => {
-  return chatList.value.some(chat => chat.unreadCount > 0)
-});
+const messagesStore = useMessagesStore();
 
 onMounted(() => {
-  fetchChatList();
+  messagesStore.fetchChatList();
 });
 
-const markAllAsRead = () => {
-  chatList.value.forEach(chat => {
-    chat.unreadCount = 0;
-  });
-  // 在实际应用中，这里会调用API通知后端
-  console.log('所有消息已标记为已读');
-};
-
-const navigateToChat = (chatId) => {
-  // 导航前可以将该聊天的未读消息清零
-  const chat = chatList.value.find(c => c.id === chatId);
-  if (chat) {
-    chat.unreadCount = 0;
-  }
-  router.push({ name: 'chat', params: { chatId } });
-};
 </script>
-<style scoped>
 
+<style scoped>
+.messages-home {
+  display: flex;
+  flex-direction: column;
+  height: 850px; /* 假设 BottomNav 高度为 50px */
+  background-color: #f0f2f5; /* Ant Design 风格的背景色 */
+}
 
 .chat-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  flex-grow: 1;
+  overflow-y: auto;
+  background-color: #fff;
 }
-.loading, .empty-state {
-  text-align: center;
-  color: #666;
-  padding: 2rem;
+
+.empty-state-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 100px - 50px); /* 减去 Header 和 BottomNav 的大致高度 */
+}
+
+/* 根据需要添加或调整样式 */
+:deep(.ant-list-item) {
+  padding: 12px 16px !important;
 }
 </style>

@@ -1,99 +1,111 @@
 <template>
-  <div class="request-details-form">
+  <a-form class="request-details-form" layout="vertical">
     <div class="task-header">
       <span class="task-title">委托 {{ index + 1 }}</span>
-      <!-- Checkbox for selecting this specific task -->
-      <div class="checkbox-container">
-        <input
-          type="checkbox"
-          :id="'task-selected-checkbox-' + index"
-          v-model="isSelected"
-          class="custom-checkbox"
-        >
-        <label :for="'task-selected-checkbox-' + index" class="checkbox-label"></label>
-      </div>
+      <a-checkbox v-model:checked="isSelected" class="task-checkbox"></a-checkbox>
     </div>
 
-    <div class="form-section route-section">
-      <div class="route-point origin">
-        <div class="point-icon-wrapper">
-          <div class="point-icon origin-icon">起</div>
-          <div class="route-connector">
-            <!-- Optional: SVG for dashed line if needed, or just spacing -->
-          </div>
-        </div>
-        <div class="point-details">
-          <textarea
-            v-model="computedOrigin"
+    <a-row :gutter="16">
+      <a-col :span="24">
+        <a-form-item>
+          <template #label>
+            <div class="form-item-label-with-icon">
+              <div class="point-icon origin-icon">起</div>
+              <span>起点信息</span>
+            </div>
+          </template>
+          <a-textarea
+            v-model:value="computedOrigin"
             placeholder="选择添加起点，填写详细信息 (如蓝田北门外卖柜)"
+            :rows="3"
             class="form-textarea"
-            rows="3"
-          ></textarea>
-        </div>
-      </div>
+          />
+        </a-form-item>
+      </a-col>
+    </a-row>
 
-      <div class="route-point destination">
-        <div class="point-icon-wrapper">
-          <div class="point-icon destination-icon">终</div>
-        </div>
-        <div class="point-details">
-          <textarea
-            v-model="computedDestination"
+    <a-row :gutter="16">
+      <a-col :span="24">
+        <a-form-item>
+          <template #label>
+            <div class="form-item-label-with-icon">
+              <div class="point-icon destination-icon">终</div>
+              <span>终点信息</span>
+            </div>
+          </template>
+          <a-textarea
+            v-model:value="computedDestination"
             placeholder="选择添加终点，填写详细信息 (如青溪一舍大厅)"
+            :rows="3"
             class="form-textarea"
-            rows="3"
-          ></textarea>
-        </div>
-      </div>
-    </div>
+          />
+        </a-form-item>
+      </a-col>
+    </a-row>
 
-    <div class="form-section item-info-section">
-      <div class="info-field">
-        <label :for="'item-description-' + index">物品描述:</label>
-        <textarea :id="'item-description-' + index" v-model="computedDescription" placeholder="例如：商家名称+商品名称" class="form-textarea" rows="2"></textarea>
-      </div>
+    <a-divider />
 
-      <div class="info-field">
-        <label>订单截图:</label>
-        <div class="screenshot-upload-area" @click="triggerFileUpload">
-          <input type="file" :ref="el => fileInputRef = el" @change="handleFileUpload" style="display: none;" accept="image/*">
-          <div v-if="!uploadedImagePreview" class="upload-prompt">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>点击上传图片</span>
-          </div>
-          <img v-if="uploadedImagePreview" :src="uploadedImagePreview" alt="截图预览" class="image-preview"/>
-          <span v-if="uploadedImageName && !uploadedImagePreview" class="file-name-display">{{ uploadedImageName }}</span>
-        </div>
-      </div>
 
-      <div class="info-field">
-        <label :for="'order-info-' + index">取件信息:</label>
-        <textarea :id="'order-info-' + index" v-model="computedOrderInfo" placeholder="例如：外卖柜号, 取件码, 手机号后四位" class="form-textarea" rows="3"></textarea>
+    <a-form-item label="订单截图">
+      <a-upload
+        v-model:file-list="fileList"
+        name="image"
+        list-type="picture-card"
+        class="screenshot-uploader"
+        :show-upload-list="true"
+        :before-upload="beforeUpload"
+        @change="handleUploadChange"
+        @preview="handlePreview"
+        accept="image/*"
+      >
+      <div v-if="fileList.length < 1">
+        <PlusOutlined />
+        <div style="margin-top: 8px">上传订单截图</div>
+        <span style="font-size: 12px; color: #999;">*自动识别物品描述及取件信息</span>
       </div>
-    </div>
+      </a-upload>
+      <a-modal :open="previewVisible" :title="previewTitle" :footer="null" @cancel="handlePreviewCancel">
+        <img alt="example" style="width: 100%" :src="previewImage" />
+      </a-modal>
+    </a-form-item>
 
-    <div class="form-section task-amount-section">
-      <label :for="'task-amount-input-' + index">委托金额:</label>
-      <div class="amount-input-group">
-        <input type="number" :id="'task-amount-input-' + index" v-model="computedTaskAmount" placeholder="0.00" step="0.01" min="0">
-        <span>元</span>
-      </div>
-    </div>
-  </div>
+    <a-form-item label="物品描述">
+      <a-textarea v-model:value="computedDescription" placeholder="例如：商家名称+商品名称" :rows="2" />
+    </a-form-item>
+    <a-form-item label="取件信息">
+      <a-textarea v-model:value="computedOrderInfo" placeholder="例如：外卖柜号, 取件码, 手机号后四位" :rows="3" />
+    </a-form-item>
+
+    <a-divider />
+
+    <a-form-item label="委托金额">
+      <a-input-number
+        v-model:value="computedTaskAmount"
+        :min="0"
+        :step="0.01"
+        placeholder="0.00"
+        style="width: 100%"
+      >
+        <template #addonAfter>元</template>
+      </a-input-number>
+    </a-form-item>
+  </a-form>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-// import { useOrderStore } from '@/stores/orderStore'; // Not directly needed for store modification here
+import { ref, computed, watch } from 'vue';
+import { PlusOutlined, EyeOutlined } from '@ant-design/icons-vue';
+import { message } from 'ant-design-vue';
 
 const props = defineProps({
   index: { type: Number, required: true },
   origin: String,
   destination: String,
-  description: String, // For item description
-  orderInfo: String,   // For pickup details
+  description: String,
+  orderInfo: String,
   taskAmount: Number,
-  selected: Boolean    // For the task selection checkbox
+  selected: Boolean,
+  image: Object, // Added for image data
 });
 
 const emit = defineEmits([
@@ -102,10 +114,9 @@ const emit = defineEmits([
   'update:description',
   'update:orderInfo',
   'update:taskAmount',
-  'update:selected' // Emit for selection change
+  'update:selected',
+  'update:image', // Added for image data
 ]);
-
-// const orderStore = useOrderStore(); // Not used for store modification
 
 // Computed properties for v-model two-way binding
 const computedOrigin = computed({
@@ -116,11 +127,11 @@ const computedDestination = computed({
   get: () => props.destination,
   set: (value) => emit('update:destination', value)
 });
-const computedDescription = computed({ // For item description
+const computedDescription = computed({
   get: () => props.description,
   set: (value) => emit('update:description', value)
 });
-const computedOrderInfo = computed({ // For pickup details
+const computedOrderInfo = computed({
   get: () => props.orderInfo,
   set: (value) => emit('update:orderInfo', value)
 });
@@ -131,286 +142,230 @@ const computedTaskAmount = computed({
     emit('update:taskAmount', isNaN(numValue) ? null : numValue);
   }
 });
-const isSelected = computed({ // For the task selection checkbox
+const isSelected = computed({
   get: () => props.selected,
   set: (value) => emit('update:selected', value)
 });
 
+// Image Upload Logic
+const fileList = ref([]);
+const previewVisible = ref(false);
+const previewImage = ref('');
+const previewTitle = ref('');
 
-// File upload internal state
-const fileInputRef = ref(null);
-const uploadedImageName = ref('');
-const uploadedImagePreview = ref('');
+// Helper function to convert data URL to File object
+function dataURLtoFile(dataurl, filename) {
+    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type:mime});
+}
 
-const triggerFileUpload = () => {
-  fileInputRef.value?.click();
+// Watch for prop changes to initialize fileList for existing images
+watch(() => props.image, (newImage) => {
+  if (newImage && newImage.url && newImage.name && !fileList.value.length) {
+    // Convert data URL back to a File-like object for Ant Design Upload
+    // Ant Design Upload expects an object with uid, name, status, and url (or thumbUrl)
+     if (newImage.url.startsWith('data:')) {
+        const file = dataURLtoFile(newImage.url, newImage.name);
+        fileList.value = [{
+            uid: '-1', // Static uid for existing image
+            name: file.name,
+            status: 'done',
+            url: newImage.url, // Use the original data URL for preview
+            originFileObj: file // Store the File object if needed for re-upload or processing
+        }];
+    } else { // If it's a direct URL (e.g., from a server)
+         fileList.value = [{
+            uid: '-1',
+            name: newImage.name,
+            status: 'done',
+            url: newImage.url,
+        }];
+    }
+  } else if (!newImage && fileList.value.length > 0){
+      fileList.value = [];
+  }
+}, { immediate: true });
+
+
+const getBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
 };
 
-const handleFileUpload = (event) => {
-  const file = event.target.files?.[0];
+const beforeUpload = (file) => {
+  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+  if (!isJpgOrPng) {
+    message.error('你只能上传 JPG/PNG 格式的图片!');
+  }
+  const isLt2M = file.size / 1024 / 1024 < 2;
+  if (!isLt2M) {
+    message.error('图片大小必须小于 2MB!');
+  }
+  // If validation passes, we manually manage fileList, so return false to prevent auto-upload
+  return false; // Prevent auto-upload, handle in handleChange
+};
+
+const handleUploadChange = async (info) => {
+  // Remove file
+  if (info.file.status === 'removed') {
+    fileList.value = [];
+    emit('update:image', null);
+    return;
+  }
+
+  // Add or update file
+  const file = info.file;
+  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+  const isLt2M = file.size / 1024 / 1024 < 2;
+
+  if (!isJpgOrPng || !isLt2M) {
+    // Error messages are handled in beforeUpload, but if a file slips through or if we want to remove invalid from list:
+    fileList.value = fileList.value.filter(f => f.uid !== file.uid);
+    if (fileList.value.length === 0) emit('update:image', null); // Ensure image prop is cleared
+    return;
+  }
+  
   if (file) {
-    uploadedImageName.value = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      uploadedImagePreview.value = e.target.result;
-    };
-    reader.readAsDataURL(file);
-    // TODO: Emit the file or handle actual upload to server
-    // emit('file-uploaded', file);
-    console.log('Selected file:', file);
-  } else {
-    uploadedImageName.value = '';
-    uploadedImagePreview.value = '';
+      try {
+        const dataUrl = await getBase64(file.originFileObj || file);
+        fileList.value = [{ // Replace, only one image allowed
+            uid: file.uid || '-1', // Use file.uid if available, else generate one
+            name: file.name,
+            status: 'done', // Mark as done for display purposes
+            url: dataUrl, // For local preview
+            originFileObj: file.originFileObj || file
+        }];
+        emit('update:image', { name: file.name, url: dataUrl, file: file.originFileObj || file });
+      } catch (error) {
+        message.error('图片处理失败');
+        fileList.value = []; // Clear on error
+        emit('update:image', null);
+      }
   }
 };
 
-// onMounted: Removed store modification. Parent component is responsible for data.
+const handlePreviewCancel = () => {
+  previewVisible.value = false;
+};
+
+const handlePreview = async (file) => {
+  if (!file.url && !file.preview) {
+    file.preview = await getBase64(file.originFileObj);
+  }
+  previewImage.value = file.url || file.preview;
+  previewVisible.value = true;
+  previewTitle.value = file.name || file.url.substring(file.url.lastIndexOf('/') + 1);
+};
+
 </script>
 
 <style scoped>
 .request-details-form {
-  background-color: #fff; /* White background for the form card */
-  border-radius: 10px;
-  padding: 15px;
-  /* margin-bottom: 15px; /* Spacing handled by parent's .request-item-container */
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); /* Softer shadow */
-  /* REMOVED: height and overflow-y. Parent handles scrolling. */
+  background-color: #ffffff;
+  border-radius: 8px; /* Consistent with Ant Design cards */
+  padding: 20px;
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09); */ /* Subtle shadow */
+  margin-bottom: 16px; /* Spacing between forms */
 }
 
 .task-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0; /* Ant Design divider color */
 }
 
 .task-title {
-  font-size: 17px;
-  font-weight: 600; /* Semibold */
-  color: #333;
+  font-size: 18px; /* Slightly larger for clarity */
+  font-weight: 600;
+  color: #262626; /* Darker Ant Design text color */
 }
 
-/* Custom Checkbox Styling */
-.checkbox-container {
-  position: relative;
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-}
-.custom-checkbox {
-  opacity: 0; /* Hide original checkbox */
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-.checkbox-label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 20px;
-  height: 20px;
-  background-color: #fff;
-  border: 1.5px solid #adb5bd;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-.custom-checkbox:checked + .checkbox-label {
-  background-color: #007bff;
-  border-color: #007bff;
-}
-.custom-checkbox:checked + .checkbox-label::after {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.task-checkbox {
+  /* Ant Design checkbox is already well-styled */
 }
 
-
-.form-section {
-  margin-bottom: 20px;
-}
-.form-section:last-child {
-  margin-bottom: 0;
-}
-
-.route-point {
+.form-item-label-with-icon {
   display: flex;
-  align-items: flex-start; /* Align icon with top of textarea */
-  width: 100%;
-  margin-bottom: 15px;
-}
-.route-point:last-child {
-  margin-bottom: 0;
-}
-
-.point-icon-wrapper {
-  margin-right: 12px;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  padding-top: 4px; /* Align icon better with textarea */
+  gap: 8px; /* Space between icon and text */
 }
 
 .point-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px; /* Slightly smaller icons */
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px; /* Smaller font in icon */
   font-weight: bold;
   color: white;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 .origin-icon {
-  background-color: #5cb85c; /* Green for origin */
+  background-color: #52c41a; /* Ant Design success color */
 }
 .destination-icon {
-  background-color: #d9534f; /* Red for destination */
+  background-color: #ff4d4f; /* Ant Design error color */
 }
 
-.route-connector {
-  height: 20px; /* Space between icons if needed */
-  width: 2px;
-  /* background-image: linear-gradient(to bottom, #bbb 50%, transparent 50%);
-  background-size: 2px 8px; */ /* Simple dashed line */
-  margin-top: 5px;
-  margin-bottom: 5px;
+/* Ensure textareas take full width within form items */
+.request-details-form .ant-form-item-control-input-content .ant-input,
+.request-details-form .ant-form-item-control-input-content .ant-input-number {
+  width: 100%;
 }
-
-.point-details {
-  flex-grow: 1;
-}
-
 .form-textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
-  min-height: 60px; /* Minimum height for textareas */
-  box-sizing: border-box;
-}
-.form-textarea:focus {
-  outline: none;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+   /* Ant Textarea is styled well by default */
 }
 
-.item-info-section, .task-amount-section {
-  padding-top: 15px;
-  border-top: 1px solid #e9ecef; /* Lighter separator */
-}
-
-.info-field {
-  margin-bottom: 15px;
-}
-.info-field:last-child {
-  margin-bottom: 0;
-}
-
-.info-field label {
-  display: block;
-  font-size: 14px;
-  color: #495057;
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.screenshot-upload-area {
-  width: 100%;
-  min-height: 100px; /* Flexible height */
-  border: 2px dashed #ced4da;
-  border-radius: 6px;
+/* Style for the Upload component */
+.screenshot-uploader > .ant-upload {
+  width: 100%; /* Make the upload button area wider */
+  min-height: 120px; /* Adjust height as needed */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  background-color: #f8f9fa;
-  color: #6c757d;
-  font-size: 14px;
-  text-align: center;
-  padding: 15px;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
 }
-.screenshot-upload-area:hover {
-  border-color: #007bff;
+.screenshot-uploader .ant-upload-list-picture-card-container {
+  width: 100px; /* Adjust if needed */
+  height: 100px; /* Adjust if needed */
 }
-.upload-prompt {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.upload-prompt svg {
-  color: #6c757d;
-}
-.image-preview {
-  max-width: 100%;
-  max-height: 150px; /* Limit preview height */
-  object-fit: contain;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-.file-name-display {
-  font-size: 12px;
-  color: #333;
-  margin-top: 8px;
-  word-break: break-all;
+.screenshot-uploader.ant-upload-picture-card-wrapper {
+    display: flex;
+    justify-content: center; /* Center the upload item if only one */
 }
 
-.task-amount-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.task-amount-section label {
-  font-size: 15px;
-  color: #333;
-  font-weight: 600;
+
+/* Custom divider styling if needed, though <a-divider /> is usually sufficient */
+/* .ant-divider {
+  margin-top: 16px;
+  margin-bottom: 24px;
+} */
+
+/* General Form Item Styling */
+.request-details-form .ant-form-item {
+  margin-bottom: 18px; /* Consistent spacing */
 }
 
-.amount-input-group {
-  display: flex;
-  align-items: center;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  padding-left: 10px;
+.request-details-form .ant-form-item-label > label {
+  font-weight: 500; /* Medium weight labels */
+  color: #595959; /* Slightly lighter text for labels */
 }
-.amount-input-group input {
-  width: 80px;
-  padding: 8px 0;
-  border: none;
-  text-align: right;
-  font-size: 16px;
-  font-weight: 600;
-  color: #e63946; /* Distinct amount color */
-}
-.amount-input-group input:focus {
-  outline: none;
-}
-.amount-input-group input::placeholder {
-  color: #adb5bd;
-  font-weight: normal;
-}
-.amount-input-group span {
-  font-size: 15px;
-  color: #495057;
-  padding: 8px 10px 8px 5px;
-  background-color: #e9ecef;
-  border-top-right-radius: 5px;
-  border-bottom-right-radius: 5px;
+
+/* Input Number Styling */
+.ant-input-number-group-addon {
+  background-color: #fafafa; /* Lighter addon background */
 }
 </style>

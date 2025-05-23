@@ -1,6 +1,8 @@
 <template>
     <div class="page-container">
-        <span class="icon"><i class="fas fa-angle-left" @click="$router.push('/profile')"></i></span>
+        <span class="back-icon" @click="$router.push('/profile')">
+            <i class="fas fa-angle-left"></i>
+        </span>
         <h2 class="title">设置</h2>
     </div>
 
@@ -27,22 +29,32 @@
 .page-container {
     display: flex;
     padding: 20px;
-    text-align: center;
-    justify-content: flex-start;
     align-items: center;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-.icon {
-    font-size: 30px;
-    cursor: pointer;
+.back-icon {
+    font-size: 24px;
     color: #333;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.back-icon:hover {
+    color: #1890ff;
 }
 
 .title {
-    width: 90%;
+    flex: 1;
+    text-align: center;
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 18px;
     font-weight: 600;
+    color: #333;
 }
 
 .profile-info {
@@ -55,7 +67,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 0;
+    padding: 18px 0;
     border-top: 1px solid #e0e0e0;
 }
 

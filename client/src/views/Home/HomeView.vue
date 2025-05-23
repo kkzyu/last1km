@@ -1,116 +1,68 @@
+// views/Home/HomeView.vue
 <template>
-  <HomeHead />
-  <div class="home-page">
-    <HomeCarousel />
-    <OrderHistory 
-      :grouped-orders="groupedOrders"
-      @publish="publishNewOrder"
-      @cancel="cancelOrder"
-      @restore="restoreOrder"  
-      @review="reviewOrder"
-    />
-  </div>
-  <BottomNav />
+  <a-layout class="home-layout">
+    <app-header />
+    <a-layout-content class="home-content">
+      <home-carousel />
+      <order-history 
+        @publish="publishNewOrder"
+        @cancel="cancelOrder"
+        @restore="restoreOrder"  
+        @review="reviewOrder"
+      />
+    </a-layout-content>
+    <app-footer />
+  </a-layout>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'  // 添加路由导入
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useOrderStore } from '@/stores/orderStore';
+import HomeCarousel from '@/components/Home/HomeCarousel.vue';
+import OrderHistory from '@/components/Home/HomeOrderhistory.vue'; // 假设已重构
+import AppHeader from '@/components/Header/HomeHead.vue';
+import AppFooter from '@/components/Bottom/BottomNav.vue';
 
-const router = useRouter()  // 获取路由实例
-
-import information from '@/assets/data/information.json'
-import HomeCarousel from '@/components/Home/HomeCarousel.vue'
-import OrderHistory from '@/components/Home/HomeOrderhistory.vue'
-import HomeHead from '@/components/Header/HomeHead.vue'
-import BottomNav from '@/components/Bottom/BottomNav.vue'
-
-const activeTab = ref('home')
-const orders = ref([])
-const imageFailed = ref(false)
-
-// 从localStorage加载订单数据
-const loadOrders = () => {
-  const savedOrders = localStorage.getItem('orders')
-  orders.value = savedOrders ? JSON.parse(savedOrders) : information.orders
-}
-
-// 保存订单到localStorage
-const saveOrders = () => {
-  localStorage.setItem('orders', JSON.stringify(orders.value))
-}
-
-const groupedOrders = computed(() => {
-  const groups = {}
-  orders.value.forEach(order => {
-    if (!groups[order.date]) {
-      groups[order.date] = []
-    }
-    groups[order.date].push(order)
-  })
-  return groups
-})
+const router = useRouter();
+const orderStore = useOrderStore();
 
 onMounted(() => {
-  loadOrders()
-})
+  orderStore.loadOrders();
+});
 
 const cancelOrder = (orderId) => {
-  const order = orders.value.find(o => o.id === orderId)
-  if (order && order.status === '进行中') {
-    order.status = '已取消'
-    order.description = "已取消" 
-    order.eta = null
-    saveOrders()
-  }
-}
+  orderStore.cancelOrder(orderId);
+};
 
 const restoreOrder = (orderId) => {
-  const order = orders.value.find(o => o.id === orderId)
-  if (order && order.status === '已取消') {
-    order.status = '进行中'
-    order.description = ""  // 恢复描述为空
-    order.eta = 20  // 恢复预计时间
-    saveOrders()
-  }
-}
+  orderStore.restoreOrder(orderId);
+};
 
 const reviewOrder = (orderId) => {
-  console.log('评价订单:', orderId)
-}
+  orderStore.reviewOrder(orderId);
+};
 
 const publishNewOrder = () => {
-  router.push('/publish') // 修改为正确的小写router
-}
-
-const handleImageError = () => {
-  imageFailed.value = true
-}
+  router.push('/publish');
+};
 </script>
 
-
-
 <style scoped>
-
-* {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.home-page {
+.home-layout {
+  min-height: 900px;
   background-color: #f5f5f7;
-  min-height: 100vh;
-  position: relative;
-  font-family: sans-serif;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background-color: #f4f4f4;
-  overflow: hidden; 
 }
 
-.home-page > :first-child {
-  flex-shrink: 0; 
+.home-content {
+  /* padding-bottom: 60px; 为底部导航留出空间 */
+  background-color: #f4f4f4;
+  flex:1;
+  flex-direction: column;
+  display:flex;
+  overflow:hidden;
+  
 }
 </style>

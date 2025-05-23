@@ -83,12 +83,10 @@ const updateTotalAmount = () => {
 .create-request-view {
     display: flex;
     flex-direction: column;
-    /* Assuming a global BottomNav is ~60px high.
-       This view should fill the space above it.
-       If no global BottomNav, height can be 100vh. */
-    height: calc(100vh - 60px); /* Adjust 60px to actual BottomNav height */
     background-color: #f4f6f8; /* Light background for the whole view */
-    max-width: 500px;
+    /* max-width: 390px; */
+    width:100%;
+    height:100%;
     margin: 0 auto; /* Center the view if it's not full width */
     position: relative; /* For CheckoutBar positioning if it weren't fixed to viewport */
 }
@@ -111,9 +109,13 @@ const updateTotalAmount = () => {
       BEHIND the fixed CheckoutBar.
       CheckoutBar height (60px) + some buffer (10px)
     */
+    scrollbar-width:none;
+    -ms-overflow-style:none;
     padding-bottom: 75px; /* CHECKOUT_BAR_HEIGHT + BUFFER_FOR_GLOBAL_NAV (if any) + extra space */
 }
-
+.form-content-wrapper::-webkit-scrollbar {
+  display: none;
+}
 .request-item-container {
     margin-bottom: 15px;
     background-color: #fff;

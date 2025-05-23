@@ -41,7 +41,7 @@ const $route = useRoute()
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 15px 0;
-  position: fixed;
+  position: absolute;
   bottom: 0;
   width: 100%;
   box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1);
@@ -54,11 +54,13 @@ const $route = useRoute()
   font-size: 12px;
   color: #86868b;
   transition: all 0.2s ease;
+  cursor: pointer; /* 添加手型指针 */
 }
 
 .nav-item.active {
-  color: #000000;
+  color: #007bff; /* 更新为主题蓝色 */
 }
+
 
 .nav-item .icon {
   font-size: 22px;

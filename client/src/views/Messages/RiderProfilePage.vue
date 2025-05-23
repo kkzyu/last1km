@@ -19,12 +19,12 @@
         <!-- Left Column -->
         <div class="left-column">
           <RiderInfoCard :rider="rider" />
-          <RiderStatsPanel :stats="rider.stats" />
+          <WordCloud v-if="rider.stats && rider.stats.reviewKeywords" :keywords="rider.stats.reviewKeywords" />
         </div>
 
         <!-- Right Column -->
         <div class="right-column">
-          <WordCloud v-if="rider.stats && rider.stats.reviewKeywords" :keywords="rider.stats.reviewKeywords" />
+          <RiderStatsPanel :stats="rider.stats" />
         </div>
       </div>
 
@@ -245,7 +245,7 @@ const handleOrderReviewed = (reviewDetails) => {
 .profile-content-scrollable {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 15px;
+  /* padding: 15px; */
   display: flex;
   flex-direction: column;
   /* 隐藏滚动条但保留滚动功能 */
@@ -289,6 +289,7 @@ const handleOrderReviewed = (reviewDetails) => {
 .profile-main-layout {
   display: flex;
   flex-direction: row;
+  height:300px;
   gap: 15px;
   margin-bottom: 0px;
   padding: 15px;
@@ -298,7 +299,7 @@ const handleOrderReviewed = (reviewDetails) => {
 }
 
 .left-column {
-  flex: 3;  /* 原为1.2 */
+  flex: 6;  /* 原为1.2 */
   display: flex;
   flex-direction: column;
   gap: 10px;

@@ -75,13 +75,13 @@ const handleCheckout = () => {
 
 <style scoped>
 .checkout-bar-container {
-  position: fixed;
+  position: absolute;
   /* Assuming global BottomNav is ~60px. CheckoutBar sits above it. */
   /* If no global BottomNav, use bottom: 0; */
-  bottom: 0px; /* Adjust to actual BottomNav height */
+  bottom: 0px; 
   left: 0;
   right: 0;
-  z-index: 1000; /* Ensure it's above other content but potentially below modals */
+  z-index: 99; /* Ensure it's above other content but potentially below modals */
   display: flex; /* To center the content if max-width is used */
   justify-content: center; /* To center the content if max-width is used */
 }

@@ -5,7 +5,6 @@ import { RouterView } from 'vue-router'
 
 <template>
   <div class="app-container">
-    <!-- <TopHead /> -->
     <div class="content-container">
       <RouterView />
     </div>
@@ -24,6 +23,7 @@ import { RouterView } from 'vue-router'
   border-radius: 8px; /* Slightly rounded corners */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
   overflow: hidden; /* Ensures child elements don't overflow rounded corners */
+  position: relative;
 }
 
 .content-container {

@@ -1,82 +1,54 @@
 <template>
   <div class="action-header-container">
-    <button class="btn return-btn" @click="goToHome">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      <span></span>
-    </button>
-    <button class="btn add-btn" @click="handleAddRequest">
-      <span>添加委托</span>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
+    <a-button type="default" @click="goToHome" class="return-btn">
+      <template #icon><ArrowLeftOutlined /></template>
+      返回
+    </a-button>
+    <a-button type="primary" @click="handleAddRequest" class="add-btn">
+      <template #icon><PlusOutlined /></template>
+      添加委托
+    </a-button>
   </div>
 </template>
 
 <script setup>
-// import { useOrderStore } from '@/stores/orderStore'; // Not used directly here
 import { useRouter } from 'vue-router';
+import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons-vue';
 
-// const orderStore = useOrderStore(); // Not used
 const router = useRouter();
 const emit = defineEmits(['add-request-clicked']);
 
 const handleAddRequest = () => {
-    emit('add-request-clicked');
+  emit('add-request-clicked');
 };
 
 const goToHome = () => {
-    router.push('/home'); // Assuming '/home' is your home route
+  router.push('/home'); // Assuming '/home' is your home route
 };
 </script>
 
 <style scoped>
 .action-header-container {
-  padding: 12px 15px; /* Standard padding */
+  padding: 0px; /* Consistent padding */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #fff; /* Give it a background if it's a header bar */
-  /* border-bottom: 1px solid #e0e0e0; */ /* Optional separator */
+  background-color: #fff;
+  /* border-bottom: 1px solid #f0f0f0; */ /* Ant Design's PageHeader might handle this if used in parent */
   width:100%;
-}
-
-.btn {
-  display: flex; /* For aligning icon and text */
-  align-items: center;
-  justify-content: center;
-  gap: 6px; /* Space between icon and text */
-  border: none;
-  padding: 8px 16px; /* Adjusted padding for better proportions */
-  font-size: 15px;   /* Slightly smaller font for mobile */
-  font-weight: 500; /* Medium weight */
-  border-radius: 20px; /* Consistent rounded corners */
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  /* min-width: 100px; */ /* Optional: ensure a minimum tap target size */
-}
-
-.btn .icon {
-  margin-bottom: -2px; /* Fine-tune icon vertical alignment */
+  box-sizing: border-box;
 }
 
 .return-btn {
-  background-color: #f0f2f5; /* Lighter gray, less prominent */
-  color: #333; /* Darker text for readability */
-  /* border: 1px solid #d0d0d0; */ /* Optional subtle border */
-  /* margin-right:300px; */
-}
-
-.return-btn:hover {
-  background-color: #e0e2e5;
-  /* transform: translateY(-1px); */
+  /* Ant Design buttons have their own styling, we might adjust margin if needed */
 }
 
 .add-btn {
-  background-color: #007BFF;
-  color: white;
+  /* Ant Design buttons have their own styling */
 }
 
-.add-btn:hover {
-  background-color: #0056b3;
-  /* transform: translateY(-1px); */
+/* Optional: If you need to enforce a specific gap that antd's default doesn't provide */
+.action-header-container > .ant-btn + .ant-btn {
+  margin-left: 12px; /* Example gap */
 }
 </style>

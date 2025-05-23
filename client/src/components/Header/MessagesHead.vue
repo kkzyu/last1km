@@ -1,61 +1,59 @@
 <template>
-  <header class="messages-header">
-    <h3>消息列表</h3>
-    <button 
-      @click="$emit('mark-all-read')" 
-      :disabled="!hasUnreadMessages"
-      title="一键已读" 
-      aria-label="一键已读"
-    >
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width="20" 
-        height="20"
-        viewBox="0 0 24 24" 
-        stroke-width="2" 
-        stroke="currentColor" 
-        fill="none" 
-        stroke-linecap="round" 
-        stroke-linejoin="round"
-        class="icon-broom"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M19.285 14.763a1.973 1.973 0 .01 -2.791 .013l-9.142 -9.142a1.973 1.973 0 0 0 -2.791 -2.791l-.103 .086a1.973 1.973 0 0 0 -.086 2.894l9.142 9.142a1.973 1.973 0 0 0 2.894 .086l.086 -.103a1.973 1.973 0 0 0 -.209 -2.785z" />
-        <path d="M4 21h16" />
-        <path d="M7 21v-2a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v2" />
-      </svg>
-      <!-- 结束：扫把 SVG 图标 -->
-    </button>
-  </header>
+  <a-page-header class="messages-header" title="消息列表">
+    <template #extra>
+      <a-tooltip title="一键已读">
+        <a-button 
+          type="text" 
+          shape="circle"
+          @click="$emit('mark-all-read')" 
+          :disabled="!hasUnreadMessages"
+          aria-label="一键已读"
+        >
+          <template #icon><MailOutlined /></template>
+        </a-button>
+      </a-tooltip>
+    </template>
+  </a-page-header>
 </template>
 
 <script setup>
+import { PageHeader as APageHeader, Button as AButton, Tooltip as ATooltip } from 'ant-design-vue';
+import { MailOutlined } from '@ant-design/icons-vue'; // 使用 Ant Design Icon
+
 defineProps({
   hasUnreadMessages: Boolean
 })
+
+// defineEmits 已被移除，因为 $emit 在模板中直接使用
 </script>
 
 <style scoped>
 .messages-header {
-  /* background-color: #2196F3; */
-  color: black;
-  padding-left: 15px;
-  padding-right: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background-color: #fff; /* 更改为白色背景，更接近 Ant Design 风格 */
+  border-bottom: 1px solid #f0f0f0; /* 添加底部边框 */
+  padding: 12px 24px; /* Ant Design PageHeader 默认 padding，可以调整 */
 }
 
-.messages-header button {
-  padding: 0.5rem; /* 调整 padding 适应图标大小 */
-  color: black; /* SVG 的 stroke="currentColor" 会继承这个颜色 */
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  display: inline-flex; /* 帮助 SVG 在按钮内垂直居中 */
-  align-items: center;
-  justify-content: center;
-  line-height: 1; /* 确保图标不会撑开按钮高度 */
+/* 如果需要覆盖 PageHeader 内部组件的样式，可以使用 :deep() */
+:deep(.ant-page-header-heading-title) {
+  font-weight: 600; /* 调整标题字重 */
+  font-size: 18px; /* 调整标题字体大小 */
 }
 
+/* 按钮样式调整，确保图标颜色和大小合适 */
+.ant-btn.ant-btn-text {
+  color: rgba(0, 0, 0, 0.65); /* 默认文本按钮颜色 */
+  font-size: 18px; /* 图标大小 */
+}
+
+.ant-btn.ant-btn-text:hover,
+.ant-btn.ant-btn-text:focus {
+  color: #1890ff; /* Ant Design 主题色 */
+  background-color: transparent;
+}
+
+.ant-btn[disabled] {
+  color: rgba(0, 0, 0, 0.25) !important;
+  cursor: not-allowed !important;
+}
 </style>
