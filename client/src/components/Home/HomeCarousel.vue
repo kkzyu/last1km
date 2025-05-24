@@ -27,7 +27,7 @@ const props = defineProps({
         scale: 1
       },
       { 
-        url: new URL('/images/banner2.jpg', import.meta.url).href,
+        url: new URL('/images/banner3.jpg', import.meta.url).href,
         alt: '广告2',
         scale: 1
       }
