@@ -22,32 +22,18 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router'; // 引入 useRoute
+import { useRouter, useRoute } from 'vue-router';
+import { authAPI } from '@/api/api';
 import HomeHead from '@/components/Header/HomeHead.vue'
 import BottomNav from '@/components/Bottom/BottomNav.vue'
 
 const router = useRouter();
-const route = useRoute(); // 获取当前路由信息
+const route = useRoute();
 
 const username = ref('');
 const password = ref('');
-const loading = ref(false); // 加载状态
-const error = ref('');   // 错误信息
-
-// 模拟登录 API - 在实际应用中，你会调用真实的后端 API
-async function mockLoginApi(user, pass) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (user === 'admin' && pass === 'password') { // 简单的模拟用户
-        resolve({ success: true, token: 'your-secure-auth-token', user: { name: user } });
-      } else if (user && pass) {
-        reject(new Error('用户名或密码错误'));
-      } else {
-        reject(new Error('请输入用户名和密码'));
-      }
-    }, 1000); // 模拟网络延迟
-  });
-}
+const loading = ref(false);
+const error = ref('');
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
@@ -59,28 +45,22 @@ const handleLogin = async () => {
   error.value = ''; // 清除之前的错误
 
   try {
-    // 模拟 API 调用
-    const response = await mockLoginApi(username.value, password.value);
+    const response = await authAPI.login({
+      username: username.value,
+      password: password.value
+    });
 
-    if (response.success) {
-      // 1. 存储认证信息 (例如 token)
-      // 使用 'authToken' 与 router.beforeEach 中的 checkAuthentication 保持一致
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('username', response.user.name); // 可以选择性保存用户名
+    if (response.data.success) {
+      // 存储认证信息
+      localStorage.setItem('authToken', response.data.data.token);
+      localStorage.setItem('userInfo', JSON.stringify(response.data.data.user));
 
-      // alert('登录成功！'); // 可以用更友好的方式提示，或者直接跳转
-
-      // 2. 跳转逻辑
-      // 检查是否有 redirect 查询参数，有则跳转到该路径，否则跳转到首页
+      // 跳转逻辑
       const redirectPath = route.query.redirect || { name: 'home' };
       router.push(redirectPath);
-
-    } else {
-      // 理论上 mockLoginApi 失败会 reject, 但以防万一
-      error.value = response.message || '登录失败，请重试。';
     }
   } catch (err) {
-    error.value = err.message || '发生未知错误，请稍后再试。';
+    error.value = err.message || '登录失败，请重试。';
   } finally {
     loading.value = false;
   }

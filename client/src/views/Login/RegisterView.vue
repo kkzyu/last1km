@@ -1,25 +1,28 @@
 <template>
-  <HomeHead />
-  <div class="auth-container">
-    <h2>注册</h2>
-    <div class="input-group">
-      <span class="input-label">昵称</span>
-      <input type="text" v-model="username" placeholder="请输入用户名称">
-    </div>
-    <div class="input-group">
-      <span class="input-label">手机号</span>
-      <input type="text" v-model="phoneNumber" placeholder="请输入手机号">
-    </div>
-    <div class="input-field-only">
-      <input type="password" v-model="password" placeholder="请输入密码">
-    </div>
-    <div class="input-field-only">
-      <input type="password" v-model="confirmPassword" placeholder="请确认密码">
-    </div>
-    <button @click="handleRegister" class="btn btn-primary">注册</button>
-    <p class="navigation-link">
-      已有账号？<a @click="goToLogin">立即登录</a>
-    </p>
+  <HomeHead />  <div class="auth-container">
+    <h2>注册</h2>    <form @submit.prevent="handleRegister">
+      <div class="input-group">
+        <span class="input-label">昵称</span>
+        <input type="text" v-model="username" placeholder="请输入用户名称" required>
+      </div>
+      <div class="input-group">
+        <span class="input-label">手机号</span>
+        <input type="text" v-model="phoneNumber" placeholder="请输入手机号" required>
+      </div>
+      <div class="input-field-only">
+        <input type="password" v-model="password" placeholder="请输入密码" required>
+      </div>
+      <div class="input-field-only">
+        <input type="password" v-model="confirmPassword" placeholder="请确认密码" required>
+      </div>
+      <p v-if="error" class="error-message">{{ error }}</p>
+      <button type="submit" class="btn btn-primary" :disabled="loading">
+        {{ loading ? '注册中...' : '注册' }}
+      </button>
+      <p class="navigation-link">
+        已有账号？<a @click="goToLogin">立即登录</a>
+      </p>
+    </form>
   </div>
   <BottomNav />
 </template>
@@ -27,6 +30,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { authAPI } from '@/api/api';
 import HomeHead from '@/components/Header/HomeHead.vue'
 import BottomNav from '@/components/Bottom/BottomNav.vue'
 
@@ -35,19 +39,34 @@ const username = ref('');
 const phoneNumber = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+const loading = ref(false);
+const error = ref('');
 
-const handleRegister = () => {
+const handleRegister = async () => {
   if (!username.value || !phoneNumber.value || !password.value || !confirmPassword.value) {
-    alert('请填写所有注册信息！');
+    error.value = '请填写所有注册信息！';
     return;
   }
   if (password.value !== confirmPassword.value) {
-    alert('两次输入的密码不一致！');
+    error.value = '两次输入的密码不一致！';
     return;
   }
-  // 模拟注册成功
-  alert('注册成功！将跳转到登录页面。');
-  router.push('/'); // 注册成功后跳转到登录页
+
+  loading.value = true;
+  error.value = '';
+
+  try {
+    await authAPI.register({
+      username: username.value,
+      password: password.value,
+      phone: phoneNumber.value
+    });
+    router.push('/login'); // 注册成功后跳转到登录页
+  } catch (err) {
+    error.value = err.message || '注册失败，请重试';
+  } finally {
+    loading.value = false;
+  }
 };
 
 const goToLogin = () => {
