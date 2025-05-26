@@ -5,13 +5,16 @@ import { orderAPI } from '@/api/api'
 export const useOrderStore = defineStore('order', () => {
   const activeTab = ref('home')
   const orders = ref([])
-  const imageFailed = ref(false)
-  const requests = ref([]) // 委托请求数组
+  const requests = ref([])
+  const isLoading = ref(false);
+  const error = ref(null);
 
   const groupedOrders = computed(() => {
     const groups = {}
-    orders.value.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString('zh-CN')
+    const sortedOrders = [...orders.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    sortedOrders.forEach(order => {
+      const date = new Date(order.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
       if (!groups[date]) {
         groups[date] = []
       }
@@ -19,20 +22,33 @@ export const useOrderStore = defineStore('order', () => {
     })
     return groups
   })
+
   async function loadOrders() {
+    isLoading.value = true;
+    error.value = null;
     try {
-      const response = await orderAPI.getOrders();
-      if (response.data.success) {
+      const response = await orderAPI.getOrders(); // 后端已过滤
+      if (response.data && Array.isArray(response.data.data)) {
         orders.value = response.data.data;
+      } else if (Array.isArray(response.data)) {
+         orders.value = response.data;
+      } else {
+        orders.value = [];
       }
-    } catch (error) {
-      console.error('加载订单失败:', error);
+    } catch (err) {
+      console.error('加载订单失败 (Store):', err);
+      error.value = err.message || '加载订单数据时出错';
+      orders.value = [];
+    } finally {
+      isLoading.value = false;
     }
   }
 
   function handleTabChange(tab) {
     activeTab.value = tab
-  }  function addRequest() {
+  }
+  
+  function addRequest() {
     const newRequest = {
       id: requests.value.length + 1,
       origin: '',
@@ -45,70 +61,94 @@ export const useOrderStore = defineStore('order', () => {
     }
     requests.value.push(newRequest)
     return newRequest
-  }async function publishNewOrder(requestData) {
+  }
+
+
+  async function publishNewOrder(requestData) {
     try {
       if (!requestData.selected) {
         return { success: true, message: '跳过未选中的委托' };
       }
-
-      // 验证必填字段
       if (!requestData.origin.trim() || !requestData.destination.trim() || requestData.amount <= 0) {
-        return { success: false, message: '请完善委托信息' };
-      }    // 构建请求数据
-    const orderData = {
-      start_address: requestData.origin.trim(),
-      end_address: requestData.destination.trim(),
-      item_description: (requestData.description || '').trim(),
-      total_amount: Number(requestData.amount)
-    };
-    try {
+        throw new Error('请完善委托信息');
+      }
+      const orderData = {
+        start_address: requestData.origin.trim(),
+        end_address: requestData.destination.trim(),
+        item_description: (requestData.description || '').trim(),
+        total_amount: Number(requestData.amount),
+        order_image: requestData.image || null // **确保传递 image 字段** (文件名或 null)
+      };
       const response = await orderAPI.createOrder(orderData);
-      if (response && response.data && response.data.success) {
-        await loadOrders(); // 刷新订单列表
-        return { success: true, message: '发布成功' };
+      if (response.data && response.data.success) {
+        await loadOrders();
+        return { success: true, message: response.data.message || '发布成功' };
+      } else {
+        throw new Error(response.data.message || '发布失败');
       }
-      return { success: false, message: response?.data?.message || '发布失败' };
-    } catch (error) {
-      console.error('发布订单失败:', error);
-      if (error.response) {
-        // 处理特定的错误状态码
-        switch (error.response.status) {
-          case 401:
-            return { success: false, message: '认证失败，请重新登录' };
-          case 400:
-            return { success: false, message: error.response.data?.message || '请求参数错误' };
-          case 500:
-            return { success: false, message: '服务器错误，请稍后重试' };
-          default:
-            return { success: false, message: error.response.data?.message || '发布失败，请重试' };
-        }
-      }
-      // 处理网络错误
-      if (error.code === 'ERR_NETWORK') {
-        return { success: false, message: '网络连接失败，请检查网络后重试' };
-      }
-      return { success: false, message: error.message || '发布失败，请重试' };
-    }
-    } catch (error) {
-      console.error('发布订单失败:', error);
-      return { success: false, message: '发布失败，请检查网络连接' };
+    } catch (err) {
+      console.error('发布订单失败 (Store):', err);
+      throw err; 
     }
   }
 
-  function handleImageError() {
-    imageFailed.value = true
+
+  async function cancelOrder(orderId) {
+    try {
+      const response = await orderAPI.cancelOrder(orderId);
+      if (response.data && response.data.success) {
+        await loadOrders();
+      } else {
+        throw new Error(response.data.message || '取消订单操作未成功');
+      }
+    } catch (err) {
+      console.error('取消订单失败 (Store):', err);
+      throw err; 
+    }
+  }
+
+  async function reviewOrder(orderId, reviewData) {
+    try {
+      const response = await orderAPI.reviewOrder(orderId, reviewData);
+      if (response.data && response.data.success) {
+        await loadOrders();
+      } else {
+        throw new Error(response.data.message || '评价订单操作未成功');
+      }
+    } catch (err) {
+      console.error('评价订单失败 (Store):', err);
+      throw err;
+    }
+  }
+
+  async function deleteOrder(orderId) {
+    try {
+      const response = await orderAPI.deleteOrder(orderId);
+      if (response.data && response.data.success) {
+        await loadOrders();
+      } else {
+        throw new Error(response.data.message || '删除订单操作未成功');
+      }
+    } catch (err)
+    {
+      console.error('删除订单失败 (Store):', err);
+      throw err;
+    }
   }
 
   return {
     activeTab,
     orders,
-    imageFailed,
     requests,
     groupedOrders,
+    isLoading,
+    error,
     loadOrders,
     handleTabChange,
     publishNewOrder,
-    handleImageError,
     addRequest,
+    cancelOrder,
+    reviewOrder,
+    deleteOrder
   }
 })

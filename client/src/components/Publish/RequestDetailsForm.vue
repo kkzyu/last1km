@@ -1,9 +1,10 @@
-<template>  <a-form class="request-details-form" layout="vertical">
+<template>
+  <a-form class="request-details-form" layout="vertical">
     <div class="task-header">
       <span class="task-title">委托 {{ index + 1 }}</span>
       <a-checkbox 
         :checked="request.selected"
-        @change="(e) => $emit('update:request', { ...request, selected: e.target.checked })"
+        @change="(e) => emitUpdateRequest({ ...request, selected: e.target.checked })"
         class="task-checkbox"
       ></a-checkbox>
     </div>
@@ -48,11 +49,10 @@
 
     <a-divider />
 
-
     <a-form-item label="订单截图">
       <a-upload
         v-model:file-list="fileList"
-        name="image"
+        name="image" 
         list-type="picture-card"
         class="screenshot-uploader"
         :show-upload-list="true"
@@ -64,11 +64,11 @@
       <div v-if="fileList.length < 1">
         <PlusOutlined />
         <div style="margin-top: 8px">上传订单截图</div>
-        <span style="font-size: 12px; color: #999;">*自动识别物品描述及取件信息</span>
+        <span style="font-size: 12px; color: #999;">*可自动识别部分信息</span>
       </div>
       </a-upload>
       <a-modal :open="previewVisible" :title="previewTitle" :footer="null" @cancel="handlePreviewCancel">
-        <img alt="example" style="width: 100%" :src="previewImage" />
+        <img alt="预览图片" style="width: 100%" :src="previewImage" />
       </a-modal>
     </a-form-item>
 
@@ -97,97 +97,86 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { PlusOutlined, EyeOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined } from '@ant-design/icons-vue'; // EyeOutlined 未使用，已移除
 import { message } from 'ant-design-vue';
+import { orderAPI } from '@/api/api'; // **新增：导入 orderAPI**
 
 const props = defineProps({
   index: { type: Number, required: true },
   request: {
     type: Object,
-    required: true
+    required: true,
+    default: () => ({ // **为request prop添加default，确保其始终是对象**
+        origin: '',
+        destination: '',
+        description: '',
+        orderInfo: '',
+        amount: 0,
+        selected: true,
+        image: null // 图片字段，用于存储后端返回的文件名
+    })
   }
 });
 
-const emit = defineEmits([
-  'update:origin',
-  'update:destination',
-  'update:description',
-  'update:orderInfo',
-  'update:taskAmount',
-  'update:selected',
-  'update:image', // Added for image data
-]);
+// **统一 emit 事件**
+const emit = defineEmits(['update:request']);
+
+// **封装 emit 调用**
+const emitUpdateRequest = (updatedFields) => {
+  emit('update:request', { ...props.request, ...updatedFields });
+};
 
 // Computed properties for v-model two-way binding
 const computedOrigin = computed({
   get: () => props.request.origin,
-  set: (value) => emit('update:request', { ...props.request, origin: value })
+  set: (value) => emitUpdateRequest({ origin: value })
 });
 const computedDestination = computed({
   get: () => props.request.destination,
-  set: (value) => emit('update:request', { ...props.request, destination: value })
+  set: (value) => emitUpdateRequest({ destination: value })
 });
 const computedDescription = computed({
   get: () => props.request.description,
-  set: (value) => emit('update:request', { ...props.request, description: value })
+  set: (value) => emitUpdateRequest({ description: value })
 });
 const computedOrderInfo = computed({
   get: () => props.request.orderInfo,
-  set: (value) => emit('update:request', { ...props.request, orderInfo: value })
+  set: (value) => emitUpdateRequest({ orderInfo: value })
 });
 const computedTaskAmount = computed({
   get: () => props.request.amount,
   set: (value) => {
     const numValue = parseFloat(value);
-    emit('update:request', { ...props.request, amount: isNaN(numValue) ? 0 : numValue });
+    emitUpdateRequest({ amount: isNaN(numValue) ? 0 : numValue });
   }
 });
 
 // Image Upload Logic
-const fileList = ref([]);
+const fileList = ref([]); // 用于a-upload组件显示
 const previewVisible = ref(false);
 const previewImage = ref('');
 const previewTitle = ref('');
 
-// Helper function to convert data URL to File object
-function dataURLtoFile(dataurl, filename) {
-    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-    while(n--){
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], filename, {type:mime});
-}
+const API_BASE_URL = 'http://localhost:5000'; // **定义API基础URL，用于拼接图片路径**
 
-// Watch for prop changes to initialize fileList for existing images
-watch(() => props.image, (newImage) => {
-  if (newImage && newImage.url && newImage.name && !fileList.value.length) {
-    // Convert data URL back to a File-like object for Ant Design Upload
-    // Ant Design Upload expects an object with uid, name, status, and url (or thumbUrl)
-     if (newImage.url.startsWith('data:')) {
-        const file = dataURLtoFile(newImage.url, newImage.name);
-        fileList.value = [{
-            uid: '-1', // Static uid for existing image
-            name: file.name,
-            status: 'done',
-            url: newImage.url, // Use the original data URL for preview
-            originFileObj: file // Store the File object if needed for re-upload or processing
-        }];
-    } else { // If it's a direct URL (e.g., from a server)
-         fileList.value = [{
-            uid: '-1',
-            name: newImage.name,
-            status: 'done',
-            url: newImage.url,
-        }];
-    }
-  } else if (!newImage && fileList.value.length > 0){
-      fileList.value = [];
+// **监听 props.request.image (存储的是后端返回的文件名)**
+watch(() => props.request.image, (newImageFilename) => {
+  if (newImageFilename && typeof newImageFilename === 'string') {
+    // 如果文件名存在，构建用于预览的完整URL，并更新fileList
+    fileList.value = [{
+      uid: '-1', // 对于已存在的图片使用静态uid
+      name: newImageFilename, // 可以显示文件名
+      status: 'done',
+      url: `${API_BASE_URL}/static/uploads/${newImageFilename}` // 构建预览URL
+    }];
+  } else if (!newImageFilename && fileList.value.length > 0) {
+    // 如果 props.request.image 被清空 (例如，父组件重置)，也清空fileList
+    fileList.value = [];
   }
 }, { immediate: true });
 
 
-const getBase64 = (file) => {
+const getBase64 = (file) => { // 预览时可能还需要
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -205,46 +194,92 @@ const beforeUpload = (file) => {
   if (!isLt2M) {
     message.error('图片大小必须小于 2MB!');
   }
-  // If validation passes, we manually manage fileList, so return false to prevent auto-upload
-  return false; // Prevent auto-upload, handle in handleChange
+  // 返回 false 以阻止 antd 的默认上传行为，我们将在 handleChange 中手动上传
+  return false; 
 };
 
 const handleUploadChange = async (info) => {
-  // Remove file
-  if (info.file.status === 'removed') {
-    fileList.value = [];
-    emit('update:image', null);
+  // fileList.value = [...info.fileList]; // 同步 antd 的 fileList (可选，但有助于显示)
+
+  const currentFile = info.file;
+
+  // 处理文件移除
+  if (currentFile.status === 'removed') {
+    fileList.value = []; // 清空显示的列表
+    emitUpdateRequest({ image: null }); // 更新父组件，将图片设为null
     return;
   }
 
-  // Add or update file
-  const file = info.file;
-  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-  const isLt2M = file.size / 1024 / 1024 < 2;
+  // 如果文件状态不是 'uploading' (antd可能会在beforeUpload返回false后设置它), 
+  // 或者不是我们手动添加的，就先把它加入列表（如果需要预览本地选择的文件）
+  // 但主要逻辑是处理新文件并上传
+  // 我们只处理最新的文件，因为只允许上传一张图片
 
-  if (!isJpgOrPng || !isLt2M) {
-    // Error messages are handled in beforeUpload, but if a file slips through or if we want to remove invalid from list:
-    fileList.value = fileList.value.filter(f => f.uid !== file.uid);
-    if (fileList.value.length === 0) emit('update:image', null); // Ensure image prop is cleared
+  // 确保我们只处理用户新选择的文件 (通常是 info.fileList 的最后一个)
+  // 并且这个文件有 originFileObj (原始 File 对象)
+  const fileToUpload = currentFile.originFileObj || currentFile;
+
+  if (!fileToUpload || !(fileToUpload instanceof File)) {
+    // console.warn("No valid file to upload or already uploaded.");
+    // 如果 fileList 已经被 watch 更新，或者没有真实文件对象，则不重复上传
+    // 但我们需要确保 fileList 和 props.request.image 同步
+    // 如果 props.request.image 已经有值，并且 fileList 也正确显示，这里可以不处理
     return;
   }
   
-  if (file) {
-      try {
-        const dataUrl = await getBase64(file.originFileObj || file);
-        fileList.value = [{ // Replace, only one image allowed
-            uid: file.uid || '-1', // Use file.uid if available, else generate one
-            name: file.name,
-            status: 'done', // Mark as done for display purposes
-            url: dataUrl, // For local preview
-            originFileObj: file.originFileObj || file
-        }];
-        emit('update:image', { name: file.name, url: dataUrl, file: file.originFileObj || file });
-      } catch (error) {
-        message.error('图片处理失败');
-        fileList.value = []; // Clear on error
-        emit('update:image', null);
-      }
+  // 再次校验（虽然beforeUpload已做，但作为保险）
+  const isJpgOrPng = fileToUpload.type === 'image/jpeg' || fileToUpload.type === 'image/png';
+  const isLt2M = fileToUpload.size / 1024 / 1024 < 2;
+
+  if (!isJpgOrPng || !isLt2M) {
+    message.error('图片格式或大小不符合要求，已取消上传。');
+    // 从 fileList (如果 antd 自动添加了) 中移除无效文件
+    fileList.value = fileList.value.filter(f => f.uid !== currentFile.uid); 
+    if (fileList.value.length === 0) {
+        emitUpdateRequest({ image: null });
+    }
+    return;
+  }
+
+  // --- 开始上传 ---
+  const formData = new FormData();
+  formData.append('image', fileToUpload);
+
+  // 更新fileList以显示加载状态 (Ant Design Upload 会自动处理一部分)
+  // 我们可以手动标记为 'uploading'
+   const tempFileEntry = {
+        uid: currentFile.uid || Date.now().toString(), // 确保有uid
+        name: fileToUpload.name,
+        status: 'uploading',
+        percent: 50, // 模拟上传进度
+   };
+   fileList.value = [tempFileEntry];
+
+
+  try {
+    const response = await orderAPI.uploadOrderImage(formData);
+    if (response.data && response.data.success) {
+      const serverFilename = response.data.data.filename; // 从后端获取文件名
+      emitUpdateRequest({ image: serverFilename }); // **更新父组件，传递文件名**
+      
+      // 更新 fileList 以正确显示已上传的图片，并用于预览
+      fileList.value = [{
+        uid: tempFileEntry.uid, //保持uid
+        name: fileToUpload.name,
+        status: 'done',
+        url: `${API_BASE_URL}/static/uploads/${serverFilename}`, // **用于预览的完整URL**
+        originFileObj: fileToUpload // 保留原始文件对象，预览时可能需要
+      }];
+      message.success('图片上传成功!');
+    } else {
+      throw new Error(response.data.message || '图片上传失败');
+    }
+  } catch (error) {
+    message.error(error.message || '图片上传失败');
+    fileList.value = fileList.value.filter(f => f.status !== 'uploading'); // 移除上传中的占位
+    if(fileList.value.length === 0) { // 如果之前没有成功上传的图片，则清空
+        emitUpdateRequest({ image: null });
+    }
   }
 };
 
@@ -253,140 +288,75 @@ const handlePreviewCancel = () => {
 };
 
 const handlePreview = async (file) => {
-  if (!file.url && !file.preview) {
-    file.preview = await getBase64(file.originFileObj);
+  if (!file.url && !file.preview && file.originFileObj) { // 如果没有url，尝试从originFileObj生成base64预览
+    try {
+        file.preview = await getBase64(file.originFileObj);
+    } catch (e) {
+        message.error('无法预览图片');
+        return;
+    }
   }
-  previewImage.value = file.url || file.preview;
+  previewImage.value = file.url || file.preview; // 优先使用服务器URL
   previewVisible.value = true;
-  previewTitle.value = file.name || file.url.substring(file.url.lastIndexOf('/') + 1);
+  previewTitle.value = file.name || (file.url ? file.url.substring(file.url.lastIndexOf('/') + 1) : '图片预览');
 };
 
-const validateForm = () => {
-  const errors = [];
-  if (!computedOrigin.value.trim()) {
-    errors.push('请填写起点信息');
-  }
-  if (!computedDestination.value.trim()) {
-    errors.push('请填写终点信息');
-  }
-  if (computedTaskAmount.value <= 0) {
-    errors.push('委托金额必须大于0');
-  }
-  return errors;
-};
-
-const handleFormChange = () => {
-  const errors = validateForm();
-  if (errors.length === 0) {
-    emit('update:request', { ...props.request });
-  }
-};
-
-watch([computedOrigin, computedDestination, computedTaskAmount], () => {
-  handleFormChange();
-});
-
+// 移除了 validateForm 和相关的 watch，因为每个字段都通过 computed set 直接 emit 更新
+// 表单的整体校验应该在父组件提交时进行，或者如果需要实时校验，可以另行实现
 </script>
 
 <style scoped>
+/* 样式与您提供的一致，仅作微调和注释 */
 .request-details-form {
   background-color: #ffffff;
-  border-radius: 8px; /* Consistent with Ant Design cards */
+  border-radius: 8px;
   padding: 20px;
-  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09); */ /* Subtle shadow */
-  margin-bottom: 16px; /* Spacing between forms */
+  margin-bottom: 16px;
 }
-
 .task-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0; /* Ant Design divider color */
+  border-bottom: 1px solid #f0f0f0;
 }
-
 .task-title {
-  font-size: 18px; /* Slightly larger for clarity */
+  font-size: 18px;
   font-weight: 600;
-  color: #262626; /* Darker Ant Design text color */
+  color: #262626;
 }
-
-.task-checkbox {
-  /* Ant Design checkbox is already well-styled */
-}
-
 .form-item-label-with-icon {
   display: flex;
   align-items: center;
-  gap: 8px; /* Space between icon and text */
+  gap: 8px;
 }
-
 .point-icon {
-  width: 24px; /* Slightly smaller icons */
+  width: 24px;
   height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px; /* Smaller font in icon */
+  font-size: 12px;
   font-weight: bold;
   color: white;
-  flex-shrink: 0; /* Prevent icon from shrinking */
+  flex-shrink: 0;
 }
-.origin-icon {
-  background-color: #52c41a; /* Ant Design success color */
-}
-.destination-icon {
-  background-color: #ff4d4f; /* Ant Design error color */
-}
+.origin-icon { background-color: #52c41a; }
+.destination-icon { background-color: #ff4d4f; }
 
-/* Ensure textareas take full width within form items */
-.request-details-form .ant-form-item-control-input-content .ant-input,
-.request-details-form .ant-form-item-control-input-content .ant-input-number {
-  width: 100%;
-}
-.form-textarea {
-   /* Ant Textarea is styled well by default */
-}
+.request-details-form .ant-form-item { margin-bottom: 18px; }
+.request-details-form .ant-form-item-label > label { font-weight: 500; color: #595959; }
 
-/* Style for the Upload component */
-.screenshot-uploader > .ant-upload {
-  width: 100%; /* Make the upload button area wider */
-  min-height: 120px; /* Adjust height as needed */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+/* 使 Ant Design Upload 组件的上传按钮区域更友好 */
+.screenshot-uploader :deep(.ant-upload.ant-upload-select-picture-card) {
+  width: 100%; /* 宽度占满 */
+  height: 100px; /* 固定高度 */
+  margin-bottom: 8px; /* 如果有已上传图片，与列表的间距 */
 }
-.screenshot-uploader .ant-upload-list-picture-card-container {
-  width: 100px; /* Adjust if needed */
-  height: 100px; /* Adjust if needed */
-}
-.screenshot-uploader.ant-upload-picture-card-wrapper {
-    display: flex;
-    justify-content: center; /* Center the upload item if only one */
-}
-
-
-/* Custom divider styling if needed, though <a-divider /> is usually sufficient */
-/* .ant-divider {
-  margin-top: 16px;
-  margin-bottom: 24px;
-} */
-
-/* General Form Item Styling */
-.request-details-form .ant-form-item {
-  margin-bottom: 18px; /* Consistent spacing */
-}
-
-.request-details-form .ant-form-item-label > label {
-  font-weight: 500; /* Medium weight labels */
-  color: #595959; /* Slightly lighter text for labels */
-}
-
-/* Input Number Styling */
-.ant-input-number-group-addon {
-  background-color: #fafafa; /* Lighter addon background */
+.screenshot-uploader :deep(.ant-upload-list-picture-card .ant-upload-list-item) {
+  width: 100px; /* 预览图大小 */
+  height: 100px; /* 预览图大小 */
 }
 </style>

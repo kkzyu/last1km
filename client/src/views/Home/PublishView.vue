@@ -123,6 +123,15 @@ const handleSubmitOrders = async () => {
     return false;
   }
 };
+
+const deleteOrder = async (orderId) => {
+  try {
+    await orderStore.deleteOrder(orderId);
+    message.success('订单已删除');
+  } catch (error) {
+    message.error('删除订单失败');
+  }
+};
 </script>
 
 <style scoped>

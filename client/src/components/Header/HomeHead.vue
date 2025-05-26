@@ -9,7 +9,7 @@
 defineProps({
   title: {
     type: String,
-    default: ' <span class="zju-text">ZJU</span> <span class="last1km-text">Last1Km</span>'
+    default: ' <span class="zju-text">ZJU  </span> <span class="last1km-text">Last 1Km</span>'
   }
 });
 </script>
@@ -49,8 +49,10 @@ defineProps({
 }
 
 .logo ::v-deep(.zju-text) {
-  background: linear-gradient(45deg, #007bff, #0056b3); /* 举例：ZJU使用蓝色渐变 */
+  background: linear-gradient(45deg, #007bff, #0056b3);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  font-size: 24px;  
+  font-weight: 550; 
 }
 </style>

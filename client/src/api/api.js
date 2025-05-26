@@ -1,9 +1,8 @@
 import axios from 'axios';
-import { useRouter } from 'vue-router';
 
-// 创建axios实例
+// 创建axios实例 (与您提供的代码一致)
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: 'http://localhost:5000/api', // 确保这是正确的API基础URL
     timeout: 15000,
     withCredentials: true,
     headers: {
@@ -12,17 +11,13 @@ const api = axios.create({
     }
 });
 
-// 请求拦截器
+// 请求拦截器 (与您提供的代码一致)
 api.interceptors.request.use(
     config => {
         const token = localStorage.getItem('authToken');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
-        
-        // 删除预检请求的重定向配置
-        delete config.redirect;
-        
         return config;
     },
     error => {
@@ -30,36 +25,27 @@ api.interceptors.request.use(
     }
 );
 
-// 响应拦截器
+// 响应拦截器 (与您提供的代码一致)
 api.interceptors.response.use(
     response => {
         return response;
     },
     async error => {
         if (error.response) {
-            // 处理 401 错误
             if (error.response.status === 401) {
-                // 清除本地存储的认证信息
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userInfo');
-                
-                // 如果不是登录页面，则重定向到登录
                 if (!window.location.pathname.includes('/login')) {
                     window.location.href = '/login';
                 }
                 return Promise.reject(new Error('认证失败，请重新登录'));
             }
-            
-            // 处理其他HTTP错误
             const message = error.response.data?.message || '请求失败';
             return Promise.reject(new Error(message));
         }
-        
-        // 处理网络错误
         if (error.code === 'ERR_NETWORK') {
             return Promise.reject(new Error('网络连接失败，请检查网络'));
         }
-        
         return Promise.reject(error);
     }
 );
@@ -79,10 +65,19 @@ export const userAPI = {
 };
 
 export const orderAPI = {
-    getOrders: () => api.get('/orders'),
-    createOrder: (data) => api.post('/orders', data),
-    getOrderDetails: (id) => api.get(`/orders/${id}`),
-    cancelOrder: (id) => api.post(`/orders/${id}/cancel`),
+    getOrders: () => api.get('/orders/'), 
+    createOrder: (data) => api.post('/orders/', data), 
+    getOrderDetails: (id) => api.get(`/orders/${id}`), 
+    cancelOrder: (id) => api.post(`/orders/${id}/cancel`), 
+    reviewOrder: (id, data) => api.post(`/orders/${id}/review`, data),
+    deleteOrder: (id) => api.delete(`/orders/${id}`),
+    completeOrder: (id) => api.post(`/orders/${id}/complete`),
+    // **新增：图片上传函数**
+    uploadOrderImage: (formData) => api.post('/orders/upload_image', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data' // 非常重要，用于文件上传
+        }
+    })
 };
 
 export default api;

@@ -1,4 +1,4 @@
-from flask import Flask, Response
+from flask import Flask, Response, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
@@ -7,33 +7,27 @@ from models.user import User
 from models.order import Order  
 from models.deliverer import Deliverer
 from models.address import Address
+import os
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # 更新 CORS 配置
+    # 配置 CORS
     CORS(app, 
+         origins=["http://localhost:3000"],
+         allow_credentials=True,
+         supports_credentials=True,
          resources={
              r"/api/*": {
                  "origins": ["http://localhost:3000"],
                  "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                 "allow_headers": ["Content-Type", "Authorization"],
+                 "allow_headers": ["Content-Type", "Authorization", "Accept"],
                  "expose_headers": ["Authorization"],
-                 "supports_credentials": True,
-                 "max_age": 120,
-                 "send_wildcard": False
+                 "max_age": 120
              }
          })
-
-    @app.after_request
-    def after_request(response: Response) -> Response:
-        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
-        
+    
     # 初始化数据库
     db.init_app(app)
     
@@ -69,4 +63,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)  # 改为 5000
+    app.run(debug=True, host='0.0.0.0', port=5000)
