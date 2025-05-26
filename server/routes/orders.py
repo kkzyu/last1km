@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db
 from models.user import User
@@ -45,8 +45,26 @@ def create_order(current_user):
 def get_orders(current_user):
     """获取订单列表"""
     try:
-        orders = Order.query.filter_by(user_id=current_user.id).all()
-        return success_response([order.to_dict() for order in orders])
+        orders = Order.query\
+            .filter_by(user_id=current_user.id)\
+            .order_by(Order.created_at.desc())\
+            .all()
+        
+        # 格式化订单数据
+        formatted_orders = []
+        for order in orders:
+            order_dict = order.to_dict()
+            # 添加额外的格式化信息
+            order_dict.update({
+                'status': order.order_status,
+                'origin': order.start_address,
+                'destination': order.end_address,
+                'description': order.item_description,
+                'amount': order.actual_amount
+            })
+            formatted_orders.append(order_dict)
+            
+        return success_response(formatted_orders)
         
     except Exception as e:
         return error_response(f"获取订单列表失败: {str(e)}")
@@ -91,3 +109,12 @@ def cancel_order(current_user, order_id):
         
     except Exception as e:
         return error_response(f"取消订单失败: {str(e)}")
+
+@orders_bp.route('/', methods=['OPTIONS'])
+def handle_options():
+    response = Response()
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response

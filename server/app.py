@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, Response
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
@@ -12,24 +12,41 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # 初始化扩展
+    # 更新 CORS 配置
+    CORS(app, 
+         resources={
+             r"/api/*": {
+                 "origins": ["http://localhost:3000"],
+                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                 "allow_headers": ["Content-Type", "Authorization"],
+                 "expose_headers": ["Authorization"],
+                 "supports_credentials": True,
+                 "max_age": 120,
+                 "send_wildcard": False
+             }
+         })
+
+    @app.after_request
+    def after_request(response: Response) -> Response:
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+        
+    # 初始化数据库
     db.init_app(app)
-    CORS(app)
+    
+    # 初始化 JWT
     jwt = JWTManager(app)
     
     # 注册路由蓝图
     from routes.auth import auth_bp
-    try:
-        from routes.orders import orders_bp
-        from routes.users import users_bp
-    except ImportError:
-        # 如果orders_bp和users_bp还不存在，创建空的蓝图
-        from flask import Blueprint
-        orders_bp = Blueprint('orders', __name__)
-        users_bp = Blueprint('users', __name__)
+    from routes.orders import orders_bp
+    from routes.users import users_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(orders_bp, url_prefix='/api/orders')  
+    app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(users_bp, url_prefix='/api/users')
     
     # 创建数据库表
@@ -52,4 +69,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)  # 改为 5000

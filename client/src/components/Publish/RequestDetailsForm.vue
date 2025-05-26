@@ -1,8 +1,11 @@
-<template>
-  <a-form class="request-details-form" layout="vertical">
+<template>  <a-form class="request-details-form" layout="vertical">
     <div class="task-header">
       <span class="task-title">委托 {{ index + 1 }}</span>
-      <a-checkbox v-model:checked="isSelected" class="task-checkbox"></a-checkbox>
+      <a-checkbox 
+        :checked="request.selected"
+        @change="(e) => $emit('update:request', { ...request, selected: e.target.checked })"
+        class="task-checkbox"
+      ></a-checkbox>
     </div>
 
     <a-row :gutter="16">
@@ -99,13 +102,10 @@ import { message } from 'ant-design-vue';
 
 const props = defineProps({
   index: { type: Number, required: true },
-  origin: String,
-  destination: String,
-  description: String,
-  orderInfo: String,
-  taskAmount: Number,
-  selected: Boolean,
-  image: Object, // Added for image data
+  request: {
+    type: Object,
+    required: true
+  }
 });
 
 const emit = defineEmits([
@@ -120,31 +120,27 @@ const emit = defineEmits([
 
 // Computed properties for v-model two-way binding
 const computedOrigin = computed({
-  get: () => props.origin,
-  set: (value) => emit('update:origin', value)
+  get: () => props.request.origin,
+  set: (value) => emit('update:request', { ...props.request, origin: value })
 });
 const computedDestination = computed({
-  get: () => props.destination,
-  set: (value) => emit('update:destination', value)
+  get: () => props.request.destination,
+  set: (value) => emit('update:request', { ...props.request, destination: value })
 });
 const computedDescription = computed({
-  get: () => props.description,
-  set: (value) => emit('update:description', value)
+  get: () => props.request.description,
+  set: (value) => emit('update:request', { ...props.request, description: value })
 });
 const computedOrderInfo = computed({
-  get: () => props.orderInfo,
-  set: (value) => emit('update:orderInfo', value)
+  get: () => props.request.orderInfo,
+  set: (value) => emit('update:request', { ...props.request, orderInfo: value })
 });
 const computedTaskAmount = computed({
-  get: () => props.taskAmount,
+  get: () => props.request.amount,
   set: (value) => {
     const numValue = parseFloat(value);
-    emit('update:taskAmount', isNaN(numValue) ? null : numValue);
+    emit('update:request', { ...props.request, amount: isNaN(numValue) ? 0 : numValue });
   }
-});
-const isSelected = computed({
-  get: () => props.selected,
-  set: (value) => emit('update:selected', value)
 });
 
 // Image Upload Logic
@@ -264,6 +260,31 @@ const handlePreview = async (file) => {
   previewVisible.value = true;
   previewTitle.value = file.name || file.url.substring(file.url.lastIndexOf('/') + 1);
 };
+
+const validateForm = () => {
+  const errors = [];
+  if (!computedOrigin.value.trim()) {
+    errors.push('请填写起点信息');
+  }
+  if (!computedDestination.value.trim()) {
+    errors.push('请填写终点信息');
+  }
+  if (computedTaskAmount.value <= 0) {
+    errors.push('委托金额必须大于0');
+  }
+  return errors;
+};
+
+const handleFormChange = () => {
+  const errors = validateForm();
+  if (errors.length === 0) {
+    emit('update:request', { ...props.request });
+  }
+};
+
+watch([computedOrigin, computedDestination, computedTaskAmount], () => {
+  handleFormChange();
+});
 
 </script>
 

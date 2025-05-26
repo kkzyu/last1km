@@ -16,109 +16,90 @@
         v-for="(group, date) in groupedOrders" 
         :key="date"
       >
-        <a-card 
-          v-for="order in group"
-          :key="order.id"
-          class="order-item"
-          :bordered="true"
-          :bodyStyle="{ padding: '15px', display: 'flex', gap: '15px', alignItems: 'flex-start' }"
-        >
-          <div class="order-image">
-            <img 
-              :src="getImageUrl(order.image)" 
-              alt="订单图片"
-              @error="handleImageError(order.id)"
-            >
-            <div v-if="!order.image" class="image-placeholder">暂无图片</div>
-          </div>
-
-          <div class="order-details">
-            <a-tag :color="getStatusColor(order.status)" class="order-status">
-              {{ order.status }}
-            </a-tag>
-            <a-typography-paragraph class="order-id">订单号：{{ order.id }}</a-typography-paragraph>
-            <a-typography-paragraph>{{ order.from }} → {{ order.to }}</a-typography-paragraph>
-            <a-typography-paragraph>速递物品：{{ order.item }}</a-typography-paragraph>
-            <a-typography-paragraph v-if="order.eta">
-              预计 <a-typography-text type="danger"><strong>{{ order.eta }}</strong></a-typography-text> 分钟后送达
-            </a-typography-paragraph>
-            <a-typography-paragraph v-else-if="order.description">
-              {{ order.description }}
-            </a-typography-paragraph>
-          </div>
-
-          <div class="order-actions">
-            <a-button
-              v-if="order.status !== '已完成'"
-              danger
-              :disabled="order.status !== '进行中'"
-              @click="emit('cancel', order.id)"
-              size="small"
-            >
-              取消订单
-            </a-button>
-            <a-button
-              v-if="order.status === '已完成'"
-              type="primary"
-              @click="emit('review', order.id)"
-              size="small"
-            >
-              评价订单
-            </a-button>
-            <a-button
-              v-if="order.status === '已取消'"
-              type="primary"
-              style="background-color: #4CAF50; border-color: #4CAF50;" 
-              @click="emit('restore', order.id)"
-              size="small"
-            >
-              恢复订单
-            </a-button>
-          </div>
-        </a-card>
+        <div class="date-group">
+          <div class="date-header">{{ date }}</div>
+          <a-card 
+            v-for="order in group"
+            :key="order.id"
+            class="order-item"
+            :bodyStyle="{ padding: '15px', display: 'flex', gap: '15px', alignItems: 'flex-start' }"
+          >
+            <div class="order-image">
+              <img 
+                v-if="order.image && !imageFailed" 
+                :src="getImageUrl(order.image)"
+                @error="handleImageError"
+                alt="订单图片"
+              />
+              <div v-else class="image-placeholder">
+                <a-icon type="picture" />
+              </div>
+            </div>
+            <div class="order-details">
+              <a-tag :color="getStatusColor(order.status)" class="order-status">
+                {{ order.status }}
+              </a-tag>
+              <a-typography-text>从: {{ order.origin }}</a-typography-text>
+              <br>
+              <a-typography-text>到: {{ order.destination }}</a-typography-text>
+              <br>
+              <a-typography-text type="secondary">
+                {{ order.description || '无描述' }}
+              </a-typography-text>
+            </div>
+            <div class="order-actions">
+              <a-typography-text type="danger">￥{{ order.amount }}</a-typography-text>
+              <a-button 
+                v-if="order.status === '待接单'"
+                type="text"
+                size="small"
+                @click="emit('cancel', order.id)"
+              >
+                取消
+              </a-button>
+            </div>
+          </a-card>
+        </div>
       </template>
+      <div v-if="!Object.keys(groupedOrders).length" class="empty-state">
+        <a-empty description="暂无订单" />
+      </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useOrderStore } from '@/stores/orderStore';
 
-// 使用Pinia store
 const orderStore = useOrderStore();
 const groupedOrders = computed(() => orderStore.groupedOrders);
+const imageFailed = computed(() => orderStore.imageFailed);
 
-const emit = defineEmits(['publish', 'cancel', 'review', 'restore', 'image-error']);
-const BASE_URL = import.meta.env.BASE_URL;
+const emit = defineEmits(['publish', 'cancel', 'image-error']);
+
+onMounted(() => {
+  orderStore.loadOrders();
+});
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath || typeof imagePath !== 'string') {
-    return '';
-  }
-
-  if (BASE_URL === '/') {
-    return imagePath;
-  }
-
-  const cleanBase = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-  return `${cleanBase}${imagePath}`;
+  if (!imagePath) return '';
+  return `/api/static/uploads/${imagePath}`;
 }
 
-// 获取状态对应的颜色
 const getStatusColor = (status) => {
   switch(status) {
     case '进行中': return 'processing';
+    case '配送中': return 'warning';
     case '已完成': return 'success';
     case '已取消': return 'error';
+    case '待接单': return 'default';
     default: return 'default';
   }
 }
 
-// 图片错误处理函数
-const handleImageError = (orderId) => {
-  console.error('图片加载失败:', orderId);
-  emit('image-error', orderId);
+const handleImageError = () => {
+  orderStore.handleImageError();
 }
 </script>
 
@@ -222,6 +203,20 @@ const handleImageError = (orderId) => {
   text-align: center;
 }
 
+.date-group {
+  margin-bottom: 20px;
+}
+
+.date-header {
+  padding: 10px 0;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
+}
 
 /* 响应式设计 */
 @media (max-width: 768px) {

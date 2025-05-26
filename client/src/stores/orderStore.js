@@ -1,97 +1,114 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import information from '@/assets/data/information.json'
+import { orderAPI } from '@/api/api'
 
 export const useOrderStore = defineStore('order', () => {
   const activeTab = ref('home')
   const orders = ref([])
   const imageFailed = ref(false)
-  const selectedOrders = ref([]) // 选中的订单数组
-  const selectAll = ref(false) // 全选状态
   const requests = ref([]) // 委托请求数组
 
   const groupedOrders = computed(() => {
     const groups = {}
     orders.value.forEach(order => {
-      if (!groups[order.date]) {
-        groups[order.date] = []
+      const date = new Date(order.created_at).toLocaleDateString('zh-CN')
+      if (!groups[date]) {
+        groups[date] = []
       }
-      groups[order.date].push(order)
+      groups[date].push(order)
     })
     return groups
   })
-
-  function loadOrders() {
-    orders.value = information.orders
+  async function loadOrders() {
+    try {
+      const response = await orderAPI.getOrders();
+      if (response.data.success) {
+        orders.value = response.data.data;
+      }
+    } catch (error) {
+      console.error('加载订单失败:', error);
+    }
   }
 
   function handleTabChange(tab) {
     activeTab.value = tab
-    console.log('切换到标签:', tab)
-  }
-
-  // 添加新的委托请求
-  function addRequest() {
+  }  function addRequest() {
     const newRequest = {
       id: requests.value.length + 1,
       origin: '',
       destination: '',
       description: '',
-      image: null,
       orderInfo: '',
-      amount: 0
+      image: null,
+      amount: 0,
+      selected: true
     }
     requests.value.push(newRequest)
-    console.log('当前请求列表：', requests.value) // 添加日志
     return newRequest
-  }
+  }async function publishNewOrder(requestData) {
+    try {
+      if (!requestData.selected) {
+        return { success: true, message: '跳过未选中的委托' };
+      }
 
-  function publishNewOrder() {
-    console.log('发布新委托')
+      // 验证必填字段
+      if (!requestData.origin.trim() || !requestData.destination.trim() || requestData.amount <= 0) {
+        return { success: false, message: '请完善委托信息' };
+      }    // 构建请求数据
+    const orderData = {
+      start_address: requestData.origin.trim(),
+      end_address: requestData.destination.trim(),
+      item_description: (requestData.description || '').trim(),
+      total_amount: Number(requestData.amount)
+    };
+    try {
+      const response = await orderAPI.createOrder(orderData);
+      if (response && response.data && response.data.success) {
+        await loadOrders(); // 刷新订单列表
+        return { success: true, message: '发布成功' };
+      }
+      return { success: false, message: response?.data?.message || '发布失败' };
+    } catch (error) {
+      console.error('发布订单失败:', error);
+      if (error.response) {
+        // 处理特定的错误状态码
+        switch (error.response.status) {
+          case 401:
+            return { success: false, message: '认证失败，请重新登录' };
+          case 400:
+            return { success: false, message: error.response.data?.message || '请求参数错误' };
+          case 500:
+            return { success: false, message: '服务器错误，请稍后重试' };
+          default:
+            return { success: false, message: error.response.data?.message || '发布失败，请重试' };
+        }
+      }
+      // 处理网络错误
+      if (error.code === 'ERR_NETWORK') {
+        return { success: false, message: '网络连接失败，请检查网络后重试' };
+      }
+      return { success: false, message: error.message || '发布失败，请重试' };
+    }
+    } catch (error) {
+      console.error('发布订单失败:', error);
+      return { success: false, message: '发布失败，请检查网络连接' };
+    }
   }
 
   function handleImageError() {
     imageFailed.value = true
   }
 
-  function toggleSelectAll(isSelected) {
-    selectAll.value = isSelected
-    if (isSelected) {
-      selectedOrders.value = [...orders.value]
-    } else {
-      selectedOrders.value = []
-    }
-  }
-
-  function toggleOrderSelection(order) {
-    const index = selectedOrders.value.findIndex(o => o.id === order.id)
-    if (index === -1) {
-      selectedOrders.value.push(order)
-    } else {
-      selectedOrders.value.splice(index, 1)
-    }
-    selectAll.value = selectedOrders.value.length === orders.value.length
-  }
-
-  const totalAmount = computed(() => {
-    return selectedOrders.value.reduce((sum, order) => sum + (order.amount || 0), 0)
-  })
-
   return {
     activeTab,
     orders,
     imageFailed,
-    selectedOrders,
-    selectAll,
-    requests, // 导出 requests
+    requests,
     groupedOrders,
-    totalAmount,
     loadOrders,
     handleTabChange,
     publishNewOrder,
     handleImageError,
-    toggleSelectAll,
-    toggleOrderSelection,
-    addRequest, // 导出 addRequest 方法
+    addRequest,
   }
 })
