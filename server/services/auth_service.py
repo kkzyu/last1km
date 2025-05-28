@@ -118,16 +118,17 @@ class AuthService:
     def generate_token(user_id):
         """生成JWT token"""
         try:
+            from flask_jwt_extended import create_access_token
+            from datetime import timedelta
             payload = {
                 'sub': user_id,
                 'iat': datetime.utcnow(),
                 'exp': datetime.utcnow() + current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
             }
             
-            token = jwt.encode(
-                payload,
-                current_app.config['JWT_SECRET_KEY'],
-                algorithm=current_app.config['JWT_ALGORITHM']
+            token = create_access_token(
+            identity=user_id,
+            expires_delta=timedelta(days=30)
             )
             
             current_app.logger.info(f"Token生成成功 for user_id: {user_id}")

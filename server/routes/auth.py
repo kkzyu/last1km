@@ -95,7 +95,7 @@ def login():
                 'code': 200,
                 'message': message,
                 'data': {
-                    'token': token,
+                    'access_token': token,
                     'user': user.to_dict()
                 }
             }), 200

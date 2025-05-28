@@ -5,6 +5,7 @@ from models import db
 from config import Config
 import logging
 from logging.handlers import RotatingFileHandler
+from datetime import timedelta 
 import os
 
 def create_app():
@@ -20,8 +21,8 @@ def create_app():
     )
     
     # JWT 配置
-    app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # 请更改为更安全的密钥
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False    # Token不过期（开发环境）
+    app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30) 
     
     jwt = JWTManager(app)
 
