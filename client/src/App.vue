@@ -1,5 +1,13 @@
 <script setup>
 import { RouterView } from 'vue-router'
+import { onMounted } from 'vue';
+import { useUserStore } from '@/stores/userStore';
+
+const userStore = useUserStore();
+
+onMounted(() => {
+  userStore.fetchUserProfile();
+});
 
 </script>
 

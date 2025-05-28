@@ -11,56 +11,75 @@ from utils.auth_helpers import token_required
 from datetime import datetime
 import os 
 import uuid 
-from werkzeug.utils import secure_filename 
+import traceback
+from werkzeug.utils import secure_filename
 
 orders_bp = Blueprint('orders', __name__)
 
 # --- 图片上传路由 (保持您提供的版本) ---
-@orders_bp.route('/upload_image', methods=['POST'])
+@orders_bp.route('/upload_image', methods=['POST', 'OPTIONS'])
 @token_required
 def upload_order_image(current_user):
-    if 'image' not in request.files:
-        return error_response("未提供图片文件", 400)
-    
-    file = request.files['image']
-    if file.filename == '':
-        return error_response("未选择文件", 400)
+    try:
+        current_app.logger.info(f"User {current_user.id} attempting to upload image.")
+        
+        # 检查是否有文件
+        if 'image' not in request.files:
+            current_app.logger.warning("No image file provided in request")
+            return error_response("未提供图片文件", 400)
+        
+        file = request.files['image']
+        if file.filename == '':
+            current_app.logger.warning("Empty filename provided")
+            return error_response("未选择文件", 400)
 
-    if file:
-        filename = secure_filename(file.filename)
-        ext = ''
-        if '.' in filename:
-            ext = filename.rsplit('.', 1)[1].lower()
-        
-        allowed_extensions = {'png', 'jpg', 'jpeg'}
-        if ext not in allowed_extensions:
-            return error_response(f"无效的图片类型。只允许: {', '.join(allowed_extensions)}", 400)
-        
-        unique_filename = str(uuid.uuid4()) + "." + ext
-        
-        upload_folder = current_app.config.get('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'server/static/uploads'))
-        if not os.path.exists(upload_folder):
-            try:
-                os.makedirs(upload_folder, exist_ok=True)
-            except OSError as e:
-                 return error_response(f"创建上传目录失败: {str(e)}", 500)
-
-        file_path = os.path.join(upload_folder, unique_filename)
-        
-        try:
-            file.save(file_path)
-            return success_response({
-                "filename": unique_filename,
-                "filePath": f"/static/uploads/{unique_filename}" 
-            }, "图片上传成功")
-        except Exception as e:
-            current_app.logger.error(f"保存图片失败: {str(e)}")
-            return error_response(f"保存图片失败: {str(e)}", 500)
+        if file:
+            filename = secure_filename(file.filename)
+            ext = ''
+            if '.' in filename:
+                ext = filename.rsplit('.', 1)[1].lower()
             
-    return error_response("图片上传失败", 500)
+            allowed_extensions = {'png', 'jpg', 'jpeg'}
+            if ext not in allowed_extensions:
+                current_app.logger.warning(f"Invalid file extension: {ext}")
+                return error_response(f"无效的图片类型。只允许: {', '.join(allowed_extensions)}", 400)
+            
+            unique_filename = str(uuid.uuid4()) + "." + ext
+            
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'server/static/uploads'))
+            current_app.logger.info(f"Upload folder: {upload_folder}")
+            
+            if not os.path.exists(upload_folder):
+                try:
+                    os.makedirs(upload_folder, exist_ok=True)
+                    current_app.logger.info(f"Created upload directory: {upload_folder}")
+                except OSError as e:
+                    current_app.logger.error(f"Failed to create upload directory: {str(e)}")
+                    return error_response(f"创建上传目录失败: {str(e)}", 500)
+
+            file_path = os.path.join(upload_folder, unique_filename)
+            current_app.logger.info(f"Saving file to: {file_path}")
+            
+            try:
+                file.save(file_path)
+                current_app.logger.info(f"File saved successfully: {file_path}")
+                return success_response({
+                    "filename": unique_filename,
+                    "filePath": f"/static/uploads/{unique_filename}" 
+                }, "图片上传成功")
+            except Exception as e:
+                current_app.logger.error(f"保存图片失败: {str(e)}")
+                return error_response(f"保存图片失败: {str(e)}", 500)
+                
+        return error_response("图片上传失败", 500)
+    
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error in upload_order_image: {str(e)}")
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return error_response(f"图片上传过程中发生错误: {str(e)}", 500)
 
 # --- 创建订单 (保持您提供的版本，确保 Order 模型字段正确) ---
-@orders_bp.route('/', methods=['POST'])
+@orders_bp.route('/', methods=['POST', 'OPTIONS']) # 添加 OPTIONS
 @token_required
 def create_order(current_user):
     """创建订单"""
@@ -98,7 +117,7 @@ def create_order(current_user):
         return error_response(f"订单创建失败: {str(e)}")
 
 # --- 获取订单列表 (保持您提供的版本) ---
-@orders_bp.route('/', methods=['GET'])
+@orders_bp.route('/', methods=['GET', 'OPTIONS']) # 添加 OPTIONS
 @token_required
 def get_orders(current_user):
     """获取订单列表 (只包含进行中、已完成、已取消状态)"""
@@ -115,7 +134,7 @@ def get_orders(current_user):
         return error_response(f"获取订单列表失败: {str(e)}")
 
 # --- 修改后的获取订单详情函数 ---
-@orders_bp.route('/<int:order_id>', methods=['GET'])
+@orders_bp.route('/<int:order_id>', methods=['GET', 'OPTIONS']) # 添加 OPTIONS
 @token_required
 def get_order(current_user, order_id):
     """获取订单详情，并伪造配送员信息（如果订单已分配）"""
@@ -155,7 +174,7 @@ def get_order(current_user, order_id):
 
 
 # --- 其他订单操作路由 (cancel, review, delete) 保持您提供的版本 ---
-@orders_bp.route('/<int:order_id>/cancel', methods=['POST'])
+@orders_bp.route('/<int:order_id>/cancel', methods=['POST', 'OPTIONS']) # 添加 OPTIONS
 @token_required
 def cancel_order(current_user, order_id):
     """取消订单 (目标：进行中 -> 已取消)"""
@@ -179,7 +198,7 @@ def cancel_order(current_user, order_id):
         return error_response(f"取消订单失败: {str(e)}")
 
 
-@orders_bp.route('/<int:order_id>/review', methods=['POST'])
+@orders_bp.route('/<int:order_id>/review', methods=['POST', 'OPTIONS']) # 添加 OPTIONS
 @token_required
 def review_order(current_user, order_id):
     """评价订单 (目标：已完成的订单)"""
@@ -215,7 +234,7 @@ def review_order(current_user, order_id):
         current_app.logger.error(f"评价失败: {str(e)}")
         return error_response(f"评价失败: {str(e)}")
 
-@orders_bp.route('/<int:order_id>', methods=['DELETE'])
+@orders_bp.route('/<int:order_id>', methods=['DELETE', 'OPTIONS']) # 为 deleteOrder 添加 OPTIONS
 @token_required
 def delete_order(current_user, order_id):
     """删除订单 (目标：已取消的订单)"""
@@ -238,7 +257,7 @@ def delete_order(current_user, order_id):
         return error_response(f"删除订单失败: {str(e)}")
 
 
-@orders_bp.route('/<int:order_id>/complete', methods=['POST'])
+@orders_bp.route('/<int:order_id>/complete', methods=['POST', 'OPTIONS']) # 为 completeOrder 添加 OPTIONS
 @token_required
 def complete_order(current_user, order_id):
     """标记订单为已完成"""

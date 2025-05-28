@@ -32,14 +32,19 @@ api.interceptors.response.use(
     },
     async error => {
         if (error.response) {
+            // 处理 401 错误
             if (error.response.status === 401) {
+                // 清除本地存储的认证信息
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userInfo');
-                if (!window.location.pathname.includes('/login')) {
-                    window.location.href = '/login';
+                
+                // 如果不是登录页面 (基于哈希路由)，则重定向到登录
+                if (!window.location.hash.includes('#/login')) {
+                    window.location.href = '/#/login'; // 使用哈希路由重定向
                 }
                 return Promise.reject(new Error('认证失败，请重新登录'));
             }
+            
             const message = error.response.data?.message || '请求失败';
             return Promise.reject(new Error(message));
         }
@@ -65,8 +70,8 @@ export const userAPI = {
 };
 
 export const orderAPI = {
-    getOrders: () => api.get('/orders/'), 
-    createOrder: (data) => api.post('/orders/', data), 
+    getOrders: () => api.get('/orders'), 
+    createOrder: (data) => api.post('/orders', data), 
     getOrderDetails: (id) => api.get(`/orders/${id}`), 
     cancelOrder: (id) => api.post(`/orders/${id}/cancel`), 
     reviewOrder: (id, data) => api.post(`/orders/${id}/review`, data),

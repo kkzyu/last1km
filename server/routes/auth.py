@@ -6,7 +6,7 @@ from utils.response import success_response, error_response
 
 auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route('/register', methods=['POST'])
+@auth_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
     """用户注册"""
     try:
@@ -32,7 +32,7 @@ def register():
     except Exception as e:
         return error_response(f"注册失败: {str(e)}")
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
     """用户登录"""
     try:

@@ -6,11 +6,14 @@ import { message } from 'ant-design-vue'; // 导入 Ant Design Vue 的 message �
 
 export const useUserStore = defineStore('user', () => {
   // State
-  const userProfile = ref(null); // 存储用户资料对象
+  const userProfile = ref(null);
+  const isLoadingProfile = ref(false); // 新增：用于跟踪用户资料是否正在加载
   const API_BASE_URL = 'http://localhost:5000'; // 用于后端图片及API（如果api.js中没有完全处理）
 
   // Getters
-  const isLoggedIn = computed(() => !!userProfile.value && !!localStorage.getItem('authToken'));
+  // 主要依赖 authToken 判断是否已登录，userProfile 用于显示用户信息
+  const isLoggedIn = computed(() => !!localStorage.getItem('authToken'));
+
   const displayName = computed(() => {
     if (userProfile.value) {
       return userProfile.value.nickname || userProfile.value.username || '用户';
@@ -39,22 +42,42 @@ export const useUserStore = defineStore('user', () => {
 
   // Actions
   async function fetchUserProfile() {
-    if (!localStorage.getItem('authToken')) {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
       // console.log('No auth token, skipping fetchUserProfile');
+      userProfile.value = null; // 确保在没有token时清除旧的profile
       return;
     }
+    isLoadingProfile.value = true;
     try {
       const response = await userAPI.getProfile();
       if (response.data && response.data.success) {
         userProfile.value = response.data.data;
       } else {
         console.error('Failed to fetch user profile:', response.data?.message);
-        // message.error(response.data?.message || '获取用户资料失败'); // 可选：在这里提示或由调用者处理
+        userProfile.value = null; // 获取失败时也清除
+        // 如果获取用户信息失败（例如token过期），可能需要清除token并重定向到登录
+        // localStorage.removeItem('authToken'); // 视情况决定是否在此处清除token
+        // message.error(response.data?.message || '获取用户资料失败，请重新登录');
+        // router.push('/login'); // 需要引入router实例
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      // message.error(error.message || '获取用户资料请求失败'); // 可选
+      userProfile.value = null; // 异常时也清除
+      // 同上，处理token失效等情况
+      // localStorage.removeItem('authToken');
+      // message.error(error.message || '获取用户资料请求失败，请重新登录');
+      // router.push('/login');
+    } finally {
+      isLoadingProfile.value = false;
     }
+  }
+
+  // 登录成功后调用的action
+  function loginSuccess(token, profile) {
+    localStorage.setItem('authToken', token);
+    userProfile.value = profile;
+    // 通常在这里会进行路由跳转，例如 router.push('/home');
   }
 
   function setUserProfile(profileData) {
@@ -64,8 +87,10 @@ export const useUserStore = defineStore('user', () => {
   function clearUserProfile() {
     userProfile.value = null;
     localStorage.removeItem('authToken');
-    localStorage.removeItem('userInfo'); // 如果您之前有存储这个
-    // 在实际应用中，这里可能还需要 router.push('/login');
+    localStorage.removeItem('userInfo');
+    // 在实际应用中，这里通常会强制跳转到登录页
+    // import router from '@/router'; // 假设router实例可以这样导入
+    // router.push('/login');
   }
 
   // **新增：更新用户资料的 action**
@@ -97,14 +122,15 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     userProfile,
+    isLoadingProfile, // 导出加载状态
     displayName,
     avatarUrl,
     gender,
     isLoggedIn,
     fetchUserProfile,
+    loginSuccess, // 导出登录成功处理函数
     setUserProfile,
     clearUserProfile,
-    updateUserProfile, // **确保导出此 action**
-    // API_BASE_URL, // 如果其他组件需要直接使用，可以导出，否则内部使用即可
+    updateUserProfile,
   };
 });

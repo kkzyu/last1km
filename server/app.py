@@ -1,5 +1,5 @@
-from flask import Flask, Response, request
-from flask_cors import CORS
+from flask import Flask, Response, request, jsonify
+from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager
 from config import Config
 from models import db
@@ -8,25 +8,64 @@ from models.order import Order
 from models.deliverer import Deliverer
 from models.address import Address
 import os
+import traceback
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    
-    # 配置 CORS
+    app.url_map.strict_slashes = False # Disable strict slashes    # Configure CORS - 更宽松的配置
     CORS(app, 
-         origins=["http://localhost:3000"],
-         allow_credentials=True,
+         origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
          supports_credentials=True,
-         resources={
-             r"/api/*": {
-                 "origins": ["http://localhost:3000"],
-                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                 "allow_headers": ["Content-Type", "Authorization", "Accept"],
-                 "expose_headers": ["Authorization"],
-                 "max_age": 120
-             }
-         })
+         allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         expose_headers=["Authorization"])
+
+    # 添加全局错误处理器以确保所有响应都有CORS头
+    @app.after_request
+    def after_request(response):
+        origin = request.headers.get('Origin')
+        if origin in ['http://localhost:3000', 'http://localhost:3001','http://localhost:3002']:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        return response
+
+    # 添加一个简单的OPTIONS处理器，确保所有路由都支持OPTIONS
+    @app.before_request
+    def handle_preflight():
+        if request.method == "OPTIONS":
+            response = Response()
+            origin = request.headers.get('Origin')
+            if origin in ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002']:
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, Origin, X-Requested-With'
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+            return response
+
+    # 全局错误处理器，确保所有错误响应都有CORS头
+    @app.errorhandler(500)
+    def handle_500(e):
+        app.logger.error(f"Internal Server Error: {str(e)}")
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        response = jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e) if app.debug else '服务器内部错误'
+        })
+        response.status_code = 500
+        return response
+
+    @app.errorhandler(404)
+    def handle_404(e):
+        response = jsonify({
+            'success': False,
+            'message': '请求的资源不存在',
+        })
+        response.status_code = 404
+        return response
     
     # 初始化数据库
     db.init_app(app)
