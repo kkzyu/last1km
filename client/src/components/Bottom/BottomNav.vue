@@ -28,6 +28,7 @@
 <script setup>
 import { useRoute } from 'vue-router'
 const $route = useRoute()
+import axios from '@/plugins/axios';
 </script>
 
 <style scoped>

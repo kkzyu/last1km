@@ -19,7 +19,7 @@
 <script setup>
 import { PageHeader as APageHeader, Button as AButton, Tooltip as ATooltip } from 'ant-design-vue';
 import { MailOutlined } from '@ant-design/icons-vue'; // 使用 Ant Design Icon
-
+import axios from '@/plugins/axios';
 defineProps({
   hasUnreadMessages: Boolean
 })

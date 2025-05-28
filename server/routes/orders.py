@@ -3,6 +3,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db
 from models.order import Order
 from models.user import User
+from datetime import datetime
+from models.deliverer import Deliverer
 from utils.response import success_response, error_response
 import os
 from werkzeug.utils import secure_filename
@@ -238,3 +240,64 @@ def get_order_statistics():
         
     except Exception as e:
         return error_response(f"获取统计数据失败: {str(e)}", 500)
+    
+# 添加下面的路由函数
+@orders_bp.route('/<int:order_id>/review', methods=['POST'])
+@jwt_required()
+def review_order(order_id):
+    """添加订单评价"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # 检查订单是否存在且属于当前用户
+        order = Order.query.filter_by(id=order_id, user_id=current_user_id).first()
+        if not order:
+            return error_response("订单不存在或无权评价", 404)
+        
+        # 检查订单状态是否允许评价
+        if order.order_status != 'completed':
+            return error_response("只能评价已完成的订单", 400)
+        
+        # 检查是否已经评价过
+        if order.user_review:
+            return error_response("订单已评价，不可重复评价", 400)
+        
+        data = request.get_json()
+        if not data or 'rating' not in data:
+            return error_response("评分不能为空", 400)
+        
+        # 验证评分范围
+        rating = float(data['rating'])
+        if rating < 1 or rating > 5:
+            return error_response("评分必须在1-5之间", 400)
+        
+        # 保存评价
+        order.user_rating = rating
+        order.user_review = data.get('comment', '')
+        order.review_time = datetime.utcnow()
+        
+        # 如果有配送员，更新配送员评分
+        if order.deliverer_id:
+            # 获取配送员的所有评价
+            deliverer_ratings = Order.query.filter_by(
+                deliverer_id=order.deliverer_id,
+                order_status='completed'
+            ).with_entities(Order.user_rating).filter(Order.user_rating != None).all()
+            
+            # 计算新的平均评分
+            rating_values = [r[0] for r in deliverer_ratings if r[0] is not None]
+            if rating_values:
+                new_avg_rating = sum(rating_values) / len(rating_values)
+                
+                # 更新配送员评分
+                deliverer = Deliverer.query.get(order.deliverer_id)
+                if deliverer:
+                    deliverer.rating = new_avg_rating
+        
+        db.session.commit()
+        
+        return success_response({"order_id": order_id, "rating": rating}, "评价成功")
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"评价失败: {str(e)}", 500)

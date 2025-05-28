@@ -4,90 +4,124 @@
     <h2>密码登录</h2>
     <form @submit.prevent="handleLogin"> 
       <div class="input-group">
-        <span class="input-label">昵称</span>
-        <input type="text" v-model="username" placeholder="请输入用户名称" required> 
+        <span class="input-label">用户名 *</span>
+        <input 
+          type="text" 
+          v-model="username" 
+          placeholder="请输入用户名" 
+          required
+          maxlength="80"
+        > 
       </div>
-      <div class="input-field-only">
-        <input type="password" v-model="password" placeholder="请输入密码" required>
+      <div class="input-group">
+        <span class="input-label">密码 *</span>
+        <input 
+          type="password" 
+          v-model="password" 
+          placeholder="请输入密码" 
+          required
+          minlength="6"
+        >
       </div>
+      
       <p v-if="error" class="error-message">{{ error }}</p>
-      <button type="button" @click="goToRegister" class="btn btn-secondary" :disabled="loading">注册</button> 
+      <p v-if="success" class="success-message">{{ success }}</p>
+      
       <button type="submit" class="btn btn-primary" :disabled="loading">
         {{ loading ? '登录中...' : '登录' }}
       </button>
+      
+      <button type="button" @click="goToRegister" class="btn btn-secondary" :disabled="loading">
+        注册新账户
+      </button>
     </form>
+    
+    <p class="navigation-link">
+      没有账号？<a @click="goToRegister" class="link-text">立即注册</a>
+    </p>
   </div>
   <BottomNav />
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router'; // 引入 useRoute
+import { useRouter, useRoute } from 'vue-router';
 import HomeHead from '@/components/Header/HomeHead.vue'
 import BottomNav from '@/components/Bottom/BottomNav.vue'
+import { login } from '@/api/auth.js'
 
 const router = useRouter();
-const route = useRoute(); // 获取当前路由信息
+const route = useRoute();
 
 const username = ref('');
 const password = ref('');
-const loading = ref(false); // 加载状态
-const error = ref('');   // 错误信息
+const loading = ref(false);
+const error = ref('');
+const success = ref('');
 
-// 模拟登录 API - 在实际应用中，你会调用真实的后端 API
-async function mockLoginApi(user, pass) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (user === 'admin' && pass === 'password') { // 简单的模拟用户
-        resolve({ success: true, token: 'your-secure-auth-token', user: { name: user } });
-      } else if (user && pass) {
-        reject(new Error('用户名或密码错误'));
-      } else {
-        reject(new Error('请输入用户名和密码'));
-      }
-    }, 1000); // 模拟网络延迟
-  });
-}
+const validateForm = () => {
+  error.value = '';
+  
+  if (!username.value.trim()) {
+    error.value = '请输入用户名！';
+    return false;
+  }
+  
+  if (!password.value) {
+    error.value = '请输入密码！';
+    return false;
+  }
+  
+  if (password.value.length < 6) {
+    error.value = '密码长度不能少于6位！';
+    return false;
+  }
+  
+  return true;
+};
 
 const handleLogin = async () => {
-  if (!username.value || !password.value) {
-    error.value = '请输入用户名和密码！';
+  if (!validateForm()) {
     return;
   }
 
   loading.value = true;
-  error.value = ''; // 清除之前的错误
+  error.value = '';
+  success.value = '';
 
   try {
-    // 模拟 API 调用
-    const response = await mockLoginApi(username.value, password.value);
+    const credentials = {
+      username: username.value.trim(),
+      password: password.value,
+    };
 
-    if (response.success) {
-      // 1. 存储认证信息 (例如 token)
-      // 使用 'authToken' 与 router.beforeEach 中的 checkAuthentication 保持一致
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('username', response.user.name); // 可以选择性保存用户名
+    const response = await login(credentials);
 
-      // alert('登录成功！'); // 可以用更友好的方式提示，或者直接跳转
+    if (response.code === 200) {
+      // 存储认证信息
+      localStorage.setItem('authToken', response.data.token);
+      localStorage.setItem('userInfo', JSON.stringify(response.data.user));
 
-      // 2. 跳转逻辑
-      // 检查是否有 redirect 查询参数，有则跳转到该路径，否则跳转到首页
-      const redirectPath = route.query.redirect || { name: 'home' };
-      router.push(redirectPath);
-
+      success.value = '登录成功！正在跳转...';
+      
+      // 延迟跳转，让用户看到成功消息
+      setTimeout(() => {
+        const redirectPath = route.query.redirect || '/';
+        router.push(redirectPath);
+      }, 1000);
     } else {
-      // 理论上 mockLoginApi 失败会 reject, 但以防万一
       error.value = response.message || '登录失败，请重试。';
     }
   } catch (err) {
-    error.value = err.message || '发生未知错误，请稍后再试。';
+    console.error('登录失败:', err);
+    error.value = err.response?.data?.message || err.message || '登录失败，请检查网络连接。';
   } finally {
     loading.value = false;
   }
 };
 
 const goToRegister = () => {
-  if (loading.value) return; // 防止在登录请求时跳转
+  if (loading.value) return;
   router.push('/register');
 };
 </script>
@@ -98,7 +132,7 @@ const goToRegister = () => {
   padding: 30px 20px;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  width: 340px;
+  width: 380px;
   max-width: 90%;
   margin: 60px auto;
   text-align: center;
@@ -112,12 +146,8 @@ h2 {
 }
 
 .input-group {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   text-align: left;
-}
-
-.input-field-only {
-  margin-bottom: 24px;
 }
 
 .input-label {
@@ -125,6 +155,7 @@ h2 {
   font-size: 15px;
   color: #666;
   margin-bottom: 8px;
+  font-weight: 500;
 }
 
 input[type="text"],
@@ -154,22 +185,20 @@ input[type="password"]:focus {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  /* display: block; /* 如果希望按钮独占一行 */
-  /* margin-top: 10px; /* 如果按钮是 block，可以加点间距 */
+  margin-bottom: 12px;
 }
 
 .btn-primary {
   background-color: #4a90e2;
   color: white;
-  margin-top: 10px; /* 给登录按钮一点上边距，如果注册按钮在它上方 */
 }
 
-.btn-primary:hover:not(:disabled) { /* 仅在未禁用时应用 hover 效果 */
+.btn-primary:hover:not(:disabled) {
   background-color: #357abd;
   transform: translateY(-1px);
 }
 
-.btn-primary:disabled { /* 禁用时的样式 */
+.btn-primary:disabled {
   background-color: #a0c7e8;
   cursor: not-allowed;
 }
@@ -177,7 +206,6 @@ input[type="password"]:focus {
 .btn-secondary {
   background-color: #f5f5f5;
   color: #666;
-  margin-bottom: 12px; /* 与原样式保持一致 */
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -191,9 +219,42 @@ input[type="password"]:focus {
 }
 
 .error-message {
-  color: red;
+  color: #e74c3c;
   font-size: 14px;
   margin-bottom: 15px;
-  text-align: left; /* 或者 center，根据你的设计 */
+  text-align: left;
+  padding: 8px 12px;
+  background-color: #fdf2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+}
+
+.success-message {
+  color: #27ae60;
+  font-size: 14px;
+  margin-bottom: 15px;
+  text-align: left;
+  padding: 8px 12px;
+  background-color: #f0f9f0;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+}
+
+.navigation-link {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.link-text {
+  color: #4a90e2;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link-text:hover {
+  color: #357abd;
+  text-decoration: underline;
 }
 </style>

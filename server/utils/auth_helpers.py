@@ -1,61 +1,58 @@
 from functools import wraps
-from flask import request
-from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request, get_jwt
-from models.user import User
-from utils.response import error_response
+from flask import request, jsonify, current_app
+from flask_jwt_extended import get_jwt, get_jwt_identity, verify_jwt_in_request
+from services.auth_service import AuthService
 
 def token_required(f):
-    """
-    JWT token验证装饰器（备用方案，推荐直接使用 @jwt_required()）
-    """
+    """token验证装饰器"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        try:
-            verify_jwt_in_request()
-            current_user_id = get_jwt_identity()
-            current_user = User.query.get(current_user_id)
-            if not current_user:
-                return error_response("用户不存在", 401)
-            if current_user.status != 'active':
-                return error_response("用户账户已被禁用", 401)
-            return f(current_user, *args, **kwargs)
-        except Exception as e:
-            return error_response("token验证失败", 401)
+        token = None
+        auth_header = request.headers.get('Authorization')
+        
+        if auth_header:
+            try:
+                token = auth_header.split(" ")[1]  # Bearer <token>
+            except IndexError:
+                return jsonify({'code': 401, 'message': 'Token格式错误'}), 401
+        
+        if not token:
+            return jsonify({'code': 401, 'message': '未提供认证token'}), 401
+        
+        current_user = AuthService.verify_token(token)
+        if not current_user:
+            return jsonify({'code': 401, 'message': 'Token无效或已过期'}), 401
+        
+        return f(current_user, *args, **kwargs)
+    
     return decorated
 
-def get_current_user():
-    """
-    获取当前登录用户
-    """
-    try:
-        current_user_id = get_jwt_identity()
-        if not current_user_id:
-            return None
-        current_user = User.query.get(current_user_id)
-        return current_user
-    except:
-        return None
-
 def admin_required(f):
-    """
-    管理员权限验证装饰器
-    """
+    """管理员权限验证装饰器"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        try:
-            verify_jwt_in_request()
-            current_user_id = get_jwt_identity()
-            current_user = User.query.get(current_user_id)
-            if not current_user:
-                return error_response("用户不存在", 401)
-            if current_user.status != 'active':
-                return error_response("用户账户已被禁用", 401)
-            # 假设有一个is_admin字段或者role字段
-            # if not current_user.is_admin:
-            #     return error_response("需要管理员权限", 403)
-            return f(current_user, *args, **kwargs)
-        except Exception as e:
-            return error_response("权限验证失败", 401)
+        token = None
+        auth_header = request.headers.get('Authorization')
+        
+        if auth_header:
+            try:
+                token = auth_header.split(" ")[1]
+            except IndexError:
+                return jsonify({'code': 401, 'message': 'Token格式错误'}), 401
+        
+        if not token:
+            return jsonify({'code': 401, 'message': '未提供认证token'}), 401
+        
+        current_user = AuthService.verify_token(token)
+        if not current_user:
+            return jsonify({'code': 401, 'message': 'Token无效或已过期'}), 401
+        
+        # 检查是否是管理员 (这里假设有一个role字段或者特定的管理员判断逻辑)
+        if not hasattr(current_user, 'is_admin') or not current_user.is_admin:
+            return jsonify({'code': 403, 'message': '权限不足'}), 403
+        
+        return f(current_user, *args, **kwargs)
+    
     return decorated
 
 def validate_user_status(user):

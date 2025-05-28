@@ -1,143 +1,129 @@
 <template>
-  <div class="word-cloud-square-card">
-    <!-- <h4>用户评价</h4> -->
-    <div v-if="keywords && keywords.length" class="keywords-container">
-      <span v-for="keyword in sortedKeywords" :key="keyword.text" class="keyword-tag"
-        :class="getSentimentClass(keyword.sentiment)" :style="getKeywordStyle(keyword.weight)">
-        {{ keyword.text }}
-      </span>
+  <div class="word-cloud-card">
+    <h3 class="card-title">评价词云</h3>
+    <div v-if="loading" class="loading-state">
+      <a-spin />
     </div>
-    <p v-else class="no-keywords">暂无评价关键词</p>
+    <div v-else-if="error" class="error-state">
+      {{ error }}
+    </div>
+    <div v-else-if="processedKeywords && processedKeywords.length > 0" class="word-cloud-container">
+      <div v-for="(keyword, index) in processedKeywords" :key="index" 
+           class="keyword" 
+           :style="getKeywordStyle(keyword)">
+        {{ keyword.text }}
+      </div>
+    </div>
+    <div v-else class="empty-state">
+      <p>暂无评价数据</p>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps({
   keywords: {
     type: Array,
-    required: true,
     default: () => []
   }
 });
 
-const sortedKeywords = computed(() => {
-  return [...props.keywords].sort((a, b) => b.weight - a.weight);
+const loading = ref(false);
+const error = ref(null);
+
+// 处理关键词，为词云显示做准备
+const processedKeywords = computed(() => {
+  if (!props.keywords || !Array.isArray(props.keywords)) return [];
+  
+  return props.keywords.map(keyword => {
+    // 确保每个关键词对象都有必要的属性
+    return {
+      text: keyword.text,
+      weight: keyword.weight || 1,
+      sentiment: keyword.sentiment || 'neutral', // positive, negative, neutral
+    };
+  }).sort((a, b) => b.weight - a.weight); // 按权重排序
 });
 
-const getKeywordStyle = (weight) => {
-  const minFontSize = 0.5; // em, adjusted for potentially smaller container
-  const maxFontSize = 1; // em
-  const maxWeight = Math.max(...props.keywords.map(k => k.weight).filter(Number.isFinite), 5);
-  const minWeight = Math.min(...props.keywords.map(k => k.weight).filter(Number.isFinite), 1);
-
-  let fontSize = minFontSize;
-  if (maxWeight > minWeight) {
-    fontSize = minFontSize + ((weight - minWeight) / (maxWeight - minWeight)) * (maxFontSize - minFontSize);
-  } else if (props.keywords.length > 0) {
-    fontSize = (minFontSize + maxFontSize) / 2;
+// 生成关键词样式
+const getKeywordStyle = (keyword) => {
+  // 根据权重（使用频率）决定字号
+  const minSize = 12;
+  const maxSize = 24;
+  const fontSize = minSize + (keyword.weight / 10) * (maxSize - minSize);
+  
+  // 根据情感决定颜色
+  let color;
+  switch(keyword.sentiment) {
+    case 'positive':
+      color = '#52c41a'; // 正面评价显示绿色
+      break;
+    case 'negative':
+      color = '#f5222d'; // 负面评价显示红色
+      break;
+    default:
+      color = '#1890ff'; // 中性评价显示蓝色
   }
+  
   return {
-    fontSize: `${Math.max(minFontSize, Math.min(maxFontSize, fontSize))}em`,
+    fontSize: `${fontSize}px`,
+    color,
+    fontWeight: keyword.weight > 5 ? 'bold' : 'normal',
+    padding: '4px 8px',
+    margin: '3px',
+    display: 'inline-block',
+    borderRadius: '4px',
+    backgroundColor: `${color}10` // 添加一点轻微背景色
   };
 };
 
-const getSentimentClass = (sentiment) => {
-  if (sentiment === 'positive') return 'sentiment-positive';
-  if (sentiment === 'negative') return 'sentiment-negative';
-  return 'sentiment-neutral';
-};
+onMounted(() => {
+  // 这里可以添加加载动画或其他初始化逻辑
+  if (props.keywords && props.keywords.length > 0) {
+    loading.value = false;
+  }
+});
 </script>
 
 <style scoped>
-.word-cloud-square-card {
+.word-cloud-card {
   background-color: #fff;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  /* To make it square-ish, we can use aspect-ratio or set fixed height/width */
-  /* For a dynamic square based on width: */
-  width: 100%;
-  /* Take available width in its column */
-  aspect-ratio: 1 / 1;
-  /* Make it a square */
-  overflow: hidden;
-  /* Hide overflow if content is too much for square */
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  height: 100%;
 }
 
-.word-cloud-square-card h4 {
+.card-title {
+  font-size: 16px;
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
   color: #333;
-  /* font-size: 1.1em; */
-  /* text-align: center; */
-  margin-left: 5px;
-  flex-shrink: 0;
-  /* Prevent title from shrinking */
 }
 
-.keywords-container {
+.word-cloud-container {
+  text-align: center;
+  padding: 10px;
+  min-height: 100px;
+}
+
+.loading-state, .error-state, .empty-state {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 10px;
   justify-content: center;
   align-items: center;
-  flex-grow: 1;
-  /* Allow this to take remaining space */
-  overflow-y: auto;
-  /* Allow scrolling within the keyword area if needed */
-  padding: 5px;
-  /* Small padding inside */
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE/Edge */
+  height: 120px;
+  color: #999;
 }
-.keywords-container::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-.keyword-tag {
-  padding: 5px 10px;
-  border-radius: 15px;
-  font-weight: 500;
-  line-height: 1;
-  transition: transform 0.2s ease-in-out;
+
+.keyword {
+  transition: all 0.3s ease;
   cursor: default;
 }
 
-.keyword-tag:hover {
-  transform: scale(1.05);
-  /* Slightly less aggressive hover */
-}
-
-.sentiment-positive {
-  background-color: #e6ffed;
-  color: #28a745;
-  border: 1px solid #b7eac9;
-}
-
-.sentiment-negative {
-  background-color: #ffebee;
-  color: #dc3545;
-  border: 1px solid #f8c6c7;
-}
-
-.sentiment-neutral {
-  background-color: #f0f0f0;
-  color: #555;
-  border: 1px solid #dcdcdc;
-}
-
-.no-keywords {
-  text-align: center;
-  color: #777;
-  margin: auto;
-  /* Center vertically and horizontally */
-  font-size: 0.9em;
+.keyword:hover {
+  transform: scale(1.1);
 }
 </style>

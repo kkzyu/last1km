@@ -36,7 +36,13 @@
             <a-tag :color="getStatusColor(order.status)" class="order-status">
               {{ order.status }}
             </a-tag>
-            <a-typography-paragraph class="order-id">订单号：{{ order.id }}</a-typography-paragraph>
+            <a-typography-paragraph 
+              class="order-id" 
+              @click="$router.push(`/order/${order.id}`)"
+              style="cursor: pointer;"
+            >
+              订单号：{{ order.id }}
+            </a-typography-paragraph>
             <a-typography-paragraph>{{ order.from }} → {{ order.to }}</a-typography-paragraph>
             <a-typography-paragraph>速递物品：{{ order.item }}</a-typography-paragraph>
             <a-typography-paragraph v-if="order.eta">

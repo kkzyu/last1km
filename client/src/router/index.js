@@ -143,6 +143,24 @@ const routes = [
       title: '切换账号'
     }
   },
+  {
+  path: '/profile/addresses',
+  name: 'address-management',
+  component: () => import('@/components/Profile/AddressManagement.vue'),
+  meta: { 
+    requiresAuth: true,
+    title: '地址管理'
+  }
+  },
+  {
+  path: '/order/:id',
+  name: 'order-detail',
+  component: () => import('@/views/Home/DetailOrderView.vue'),
+  meta: { 
+    requiresAuth: true,
+    title: '订单详情'
+  }
+  },
   // Fallback route for 404
   {
     path: '/:pathMatch(.*)*',

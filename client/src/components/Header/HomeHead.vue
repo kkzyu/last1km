@@ -6,6 +6,7 @@
 </template>
 
 <script setup>
+import axios from '@/plugins/axios';
 defineProps({
   title: {
     type: String,

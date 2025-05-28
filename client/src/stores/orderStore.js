@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import information from '@/assets/data/information.json'
+import axios from 'axios';
 
 export const useOrderStore = defineStore('order', () => {
   const activeTab = ref('home')
@@ -9,6 +10,8 @@ export const useOrderStore = defineStore('order', () => {
   const selectedOrders = ref([]) // 选中的订单数组
   const selectAll = ref(false) // 全选状态
   const requests = ref([]) // 委托请求数组
+  const currentOrderDetail = ref(null);
+  const loading = ref(false);
 
   const groupedOrders = computed(() => {
     const groups = {}
@@ -73,9 +76,66 @@ export const useOrderStore = defineStore('order', () => {
     selectAll.value = selectedOrders.value.length === orders.value.length
   }
 
+// 添加恢复订单方法
+  async function restoreOrder(orderId) {
+    try {
+      const response = await axios.put(`/api/orders/${orderId}/restore`);
+      // 更新本地订单状态
+      const index = orders.value.findIndex(order => order.id === orderId);
+      if (index !== -1) {
+        orders.value[index].order_status = 'pending';
+      }
+      return response.data;
+    } catch (error) {
+      console.error('恢复订单失败:', error);
+      throw error;
+    }
+  }
+  
+  // 添加订单详情获取方法
+  async function fetchOrderDetail(orderId) {
+    try {
+      const response = await axios.get(`/api/orders/${orderId}`);
+      currentOrderDetail.value = response.data.data;
+      return response.data.data;
+    } catch (error) {
+      console.error('获取订单详情失败:', error);
+      throw error;
+    }
+  }
+  
+  // 添加评价订单方法
+  async function reviewOrder(orderId, reviewData) {
+    try {
+      const response = await axios.post(`/api/orders/${orderId}/review`, reviewData);
+      return response.data;
+    } catch (error) {
+      console.error('评价订单失败:', error);
+      throw error;
+    }
+  }
+  
+  // 添加取消订单方法
+  async function cancelOrder(orderId) {
+    try {
+      const response = await axios.put(`/api/orders/${orderId}/cancel`);
+      // 更新本地订单状态
+      const index = orders.value.findIndex(order => order.id === orderId);
+      if (index !== -1) {
+        orders.value[index].order_status = 'cancelled';
+      }
+      return response.data;
+    } catch (error) {
+      console.error('取消订单失败:', error);
+      throw error;
+    }
+  }
+  
+
   const totalAmount = computed(() => {
     return selectedOrders.value.reduce((sum, order) => sum + (order.amount || 0), 0)
   })
+
 
   return {
     activeTab,
@@ -93,5 +153,9 @@ export const useOrderStore = defineStore('order', () => {
     toggleSelectAll,
     toggleOrderSelection,
     addRequest, // 导出 addRequest 方法
+    fetchOrderDetail,
+    reviewOrder,
+    restoreOrder,
+    cancelOrder,
   }
 })
