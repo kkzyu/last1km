@@ -225,7 +225,7 @@ function confirmDelete(address) {
 async function saveAddress() {
   // 验证必填字段
   if (!addressForm.value.name.trim()) {
-    message.error('请输入地址名称');
+    message.error('请输入校区名称');
     return;
   }
   

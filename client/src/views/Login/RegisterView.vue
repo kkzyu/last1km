@@ -40,31 +40,111 @@
           maxlength="120"
         >
       </div>
+      
+      <!-- 密码输入框增强 -->
       <div class="input-group">
         <span class="input-label">密码 *</span>
-        <input 
-          type="password" 
-          v-model="password" 
-          placeholder="请输入密码（至少6位）" 
-          required
-          minlength="6"
-        >
+        <div class="password-input-container">
+          <input 
+            :type="showPassword ? 'text' : 'password'"
+            v-model="password" 
+            placeholder="请输入密码（至少6位）" 
+            required
+            minlength="6"
+            @input="checkPasswordStrength"
+          >
+          <button 
+            type="button" 
+            class="password-toggle" 
+            @click="togglePasswordVisibility"
+            :title="showPassword ? '隐藏密码' : '显示密码'"
+          >
+            <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        
+        <!-- 密码强度指示器 -->
+        <div v-if="password" class="password-strength">
+          <div class="strength-bar">
+            <div 
+              class="strength-fill" 
+              :class="`strength-${passwordStrength.level}`"
+              :style="{ width: passwordStrength.percentage + '%' }"
+            ></div>
+          </div>
+          <div class="strength-text" :class="`strength-${passwordStrength.level}`">
+            {{ passwordStrength.text }}
+          </div>
+          
+          <!-- 密码要求提示 -->
+          <div class="password-requirements">
+            <div class="requirement" :class="{ met: passwordChecks.length }">
+              <i class="fas fa-check" v-if="passwordChecks.length"></i>
+              <i class="fas fa-times" v-else></i>
+              至少6个字符
+            </div>
+            <div class="requirement" :class="{ met: passwordChecks.hasUpperCase }">
+              <i class="fas fa-check" v-if="passwordChecks.hasUpperCase"></i>
+              <i class="fas fa-times" v-else></i>
+              包含大写字母
+            </div>
+            <div class="requirement" :class="{ met: passwordChecks.hasLowerCase }">
+              <i class="fas fa-check" v-if="passwordChecks.hasLowerCase"></i>
+              <i class="fas fa-times" v-else></i>
+              包含小写字母
+            </div>
+            <div class="requirement" :class="{ met: passwordChecks.hasNumber }">
+              <i class="fas fa-check" v-if="passwordChecks.hasNumber"></i>
+              <i class="fas fa-times" v-else></i>
+              包含数字
+            </div>
+            <div class="requirement" :class="{ met: passwordChecks.hasSpecial }">
+              <i class="fas fa-check" v-if="passwordChecks.hasSpecial"></i>
+              <i class="fas fa-times" v-else></i>
+              包含特殊字符
+            </div>
+          </div>
+        </div>
       </div>
+      
+      <!-- 确认密码输入框增强 -->
       <div class="input-group">
         <span class="input-label">确认密码 *</span>
-        <input 
-          type="password" 
-          v-model="confirmPassword" 
-          placeholder="请再次输入密码" 
-          required
-          minlength="6"
-        >
+        <div class="password-input-container">
+          <input 
+            :type="showConfirmPassword ? 'text' : 'password'"
+            v-model="confirmPassword" 
+            placeholder="请再次输入密码" 
+            required
+            minlength="6"
+          >
+          <button 
+            type="button" 
+            class="password-toggle" 
+            @click="toggleConfirmPasswordVisibility"
+            :title="showConfirmPassword ? '隐藏密码' : '显示密码'"
+          >
+            <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        
+        <!-- 密码匹配提示 -->
+        <div v-if="confirmPassword" class="password-match">
+          <div v-if="password === confirmPassword" class="match-success">
+            <i class="fas fa-check"></i>
+            密码匹配
+          </div>
+          <div v-else class="match-error">
+            <i class="fas fa-times"></i>
+            密码不匹配
+          </div>
+        </div>
       </div>
       
       <p v-if="error" class="error-message">{{ error }}</p>
       <p v-if="success" class="success-message">{{ success }}</p>
       
-      <button type="submit" class="btn btn-primary" :disabled="loading">
+      <button type="submit" class="btn btn-primary" :disabled="loading || !isFormValid">
         {{ loading ? '注册中...' : '注册' }}
       </button>
       
@@ -81,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import HomeHead from '@/components/Header/HomeHead.vue'
 import BottomNav from '@/components/Bottom/BottomNav.vue'
@@ -97,6 +177,82 @@ const confirmPassword = ref('');
 const loading = ref(false);
 const error = ref('');
 const success = ref('');
+
+// 密码可见性控制
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
+
+// 密码强度检测
+const passwordStrength = ref({
+  level: 'weak',
+  percentage: 0,
+  text: '弱'
+});
+
+const passwordChecks = ref({
+  length: false,
+  hasUpperCase: false,
+  hasLowerCase: false,
+  hasNumber: false,
+  hasSpecial: false
+});
+
+// 计算表单是否有效
+const isFormValid = computed(() => {
+  return username.value.trim().length >= 3 &&
+         password.value.length >= 6 &&
+         confirmPassword.value.length >= 6 &&
+         password.value === confirmPassword.value &&
+         passwordStrength.value.level !== 'weak' &&
+         (!phone.value.trim() || /^1[3-9]\d{9}$/.test(phone.value.trim())) &&
+         (!email.value.trim() || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.value.trim()));
+});
+
+// 切换密码可见性
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const toggleConfirmPasswordVisibility = () => {
+  showConfirmPassword.value = !showConfirmPassword.value;
+};
+
+// 检查密码强度
+const checkPasswordStrength = () => {
+  const pwd = password.value;
+  
+  // 重置检查项
+  passwordChecks.value = {
+    length: pwd.length >= 6,
+    hasUpperCase: /[A-Z]/.test(pwd),
+    hasLowerCase: /[a-z]/.test(pwd),
+    hasNumber: /\d/.test(pwd),
+    hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+  };
+  
+  // 计算强度分数
+  let score = 0;
+  if (passwordChecks.value.length) score += 20;
+  if (passwordChecks.value.hasLowerCase) score += 20;
+  if (passwordChecks.value.hasUpperCase) score += 20;
+  if (passwordChecks.value.hasNumber) score += 20;
+  if (passwordChecks.value.hasSpecial) score += 20;
+  
+  // 额外加分：长度超过8位
+  if (pwd.length >= 8) score += 10;
+  if (pwd.length >= 12) score += 10;
+  
+  // 确定强度等级
+  if (score < 40) {
+    passwordStrength.value = { level: 'weak', percentage: score, text: '弱' };
+  } else if (score < 70) {
+    passwordStrength.value = { level: 'medium', percentage: score, text: '中等' };
+  } else if (score < 90) {
+    passwordStrength.value = { level: 'strong', percentage: score, text: '强' };
+  } else {
+    passwordStrength.value = { level: 'very-strong', percentage: score, text: '很强' };
+  }
+};
 
 const validateForm = () => {
   // 清除之前的错误信息
@@ -132,6 +288,11 @@ const validateForm = () => {
   // 验证密码
   if (password.value.length < 6) {
     error.value = '密码长度不能少于6位！';
+    return false;
+  }
+  
+  if (passwordStrength.value.level === 'weak') {
+    error.value = '密码强度太弱，请设置更复杂的密码！';
     return false;
   }
   
@@ -229,6 +390,35 @@ h2 {
   font-weight: 500;
 }
 
+/* 密码输入容器 */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-container input {
+  flex: 1;
+  padding-right: 45px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: #4a90e2;
+}
+
 input[type="text"],
 input[type="email"],
 input[type="tel"],
@@ -249,6 +439,90 @@ input[type="tel"]:focus,
 input[type="password"]:focus {
   border-color: #4a90e2;
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+/* 密码强度指示器 */
+.password-strength {
+  margin-top: 10px;
+}
+
+.strength-bar {
+  width: 100%;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.strength-weak { background-color: #ff4444; }
+.strength-medium { background-color: #ff8800; }
+.strength-strong { background-color: #44ff44; }
+.strength-very-strong { background-color: #00aa00; }
+
+.strength-text {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.strength-text.strength-weak { color: #ff4444; }
+.strength-text.strength-medium { color: #ff8800; }
+.strength-text.strength-strong { color: #44ff44; }
+.strength-text.strength-very-strong { color: #00aa00; }
+
+/* 密码要求 */
+.password-requirements {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.requirement.met {
+  color: #27ae60;
+}
+
+.requirement i {
+  margin-right: 6px;
+  width: 10px;
+}
+
+/* 密码匹配指示器 */
+.password-match {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.match-success {
+  color: #27ae60;
+  display: flex;
+  align-items: center;
+}
+
+.match-error {
+  color: #e74c3c;
+  display: flex;
+  align-items: center;
+}
+
+.match-success i,
+.match-error i {
+  margin-right: 6px;
 }
 
 .btn {
@@ -305,7 +579,7 @@ input[type="password"]:focus {
 }
 
 .success-message {
-  color: #27ae60;
+  color: #52c41a;
   font-size: 14px;
   margin-bottom: 15px;
   text-align: left;
@@ -331,5 +605,17 @@ input[type="password"]:focus {
 .link-text:hover {
   color: #357abd;
   text-decoration: underline;
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .password-requirements {
+    grid-template-columns: 1fr;
+  }
+  
+  .auth-container {
+    width: 95%;
+    padding: 20px 15px;
+  }
 }
 </style>
