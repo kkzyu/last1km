@@ -17,6 +17,7 @@ const ProfileWallet = () => import('@/views/Profile/ProfileWallet.vue')
 const ProfileOrderHistory = () => import('@/views/Profile/ProfileOrderHistory.vue')
 const ProfileSetup = () => import('@/views/Profile/ProfileSetup.vue')
 const ProfileSwitchAccount = () => import('@/views/Profile/ProfileSwitchAccount.vue')
+import OrderDetail from '@/views/Order/OrderDetail.vue'
 
 const routes = [
   {
@@ -118,7 +119,7 @@ const routes = [
   },
   {
     path: '/profile/orders',
-    name: 'profile-orders',
+    name: 'profileOrders',
     component: () => import('@/views/Profile/ProfileOrderHistory.vue'),
     meta: { 
       requiresAuth: true,
@@ -147,6 +148,12 @@ const routes = [
   {
     path: '/:pathMatch(.*)*',
     redirect: '/home'
+  },
+  {
+    path: '/orders/:id',
+    name: 'OrderDetail',
+    component: OrderDetail,
+    meta: { requiresAuth: true }
   }
 ]
 

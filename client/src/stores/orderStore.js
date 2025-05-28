@@ -1,97 +1,154 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import information from '@/assets/data/information.json'
+import { orderAPI } from '@/api/api'
 
 export const useOrderStore = defineStore('order', () => {
   const activeTab = ref('home')
   const orders = ref([])
-  const imageFailed = ref(false)
-  const selectedOrders = ref([]) // 选中的订单数组
-  const selectAll = ref(false) // 全选状态
-  const requests = ref([]) // 委托请求数组
+  const requests = ref([])
+  const isLoading = ref(false);
+  const error = ref(null);
 
   const groupedOrders = computed(() => {
     const groups = {}
-    orders.value.forEach(order => {
-      if (!groups[order.date]) {
-        groups[order.date] = []
+    const sortedOrders = [...orders.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    sortedOrders.forEach(order => {
+      const date = new Date(order.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+      if (!groups[date]) {
+        groups[date] = []
       }
-      groups[order.date].push(order)
+      groups[date].push(order)
     })
     return groups
   })
 
-  function loadOrders() {
-    orders.value = information.orders
+  async function loadOrders() {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const response = await orderAPI.getOrders(); // 后端已过滤
+      if (response.data && Array.isArray(response.data.data)) {
+        orders.value = response.data.data;
+      } else if (Array.isArray(response.data)) {
+         orders.value = response.data;
+      } else {
+        orders.value = [];
+      }
+    } catch (err) {
+      console.error('加载订单失败 (Store):', err);
+      error.value = err.message || '加载订单数据时出错';
+      orders.value = [];
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   function handleTabChange(tab) {
     activeTab.value = tab
-    console.log('切换到标签:', tab)
   }
-
-  // 添加新的委托请求
+  
   function addRequest() {
     const newRequest = {
       id: requests.value.length + 1,
       origin: '',
       destination: '',
       description: '',
-      image: null,
       orderInfo: '',
-      amount: 0
+      image: null,
+      amount: 0,
+      selected: true
     }
     requests.value.push(newRequest)
-    console.log('当前请求列表：', requests.value) // 添加日志
     return newRequest
   }
 
-  function publishNewOrder() {
-    console.log('发布新委托')
-  }
 
-  function handleImageError() {
-    imageFailed.value = true
-  }
-
-  function toggleSelectAll(isSelected) {
-    selectAll.value = isSelected
-    if (isSelected) {
-      selectedOrders.value = [...orders.value]
-    } else {
-      selectedOrders.value = []
+  async function publishNewOrder(requestData) {
+    try {
+      if (!requestData.selected) {
+        return { success: true, message: '跳过未选中的委托' };
+      }
+      if (!requestData.origin.trim() || !requestData.destination.trim() || requestData.amount <= 0) {
+        throw new Error('请完善委托信息');
+      }
+      const orderData = {
+        start_address: requestData.origin.trim(),
+        end_address: requestData.destination.trim(),
+        item_description: (requestData.description || '').trim(),
+        total_amount: Number(requestData.amount),
+        order_image: requestData.image || null // **确保传递 image 字段** (文件名或 null)
+      };
+      const response = await orderAPI.createOrder(orderData);
+      if (response.data && response.data.success) {
+        await loadOrders();
+        return { success: true, message: response.data.message || '发布成功' };
+      } else {
+        throw new Error(response.data.message || '发布失败');
+      }
+    } catch (err) {
+      console.error('发布订单失败 (Store):', err);
+      throw err; 
     }
   }
 
-  function toggleOrderSelection(order) {
-    const index = selectedOrders.value.findIndex(o => o.id === order.id)
-    if (index === -1) {
-      selectedOrders.value.push(order)
-    } else {
-      selectedOrders.value.splice(index, 1)
+
+  async function cancelOrder(orderId) {
+    try {
+      const response = await orderAPI.cancelOrder(orderId);
+      if (response.data && response.data.success) {
+        await loadOrders();
+      } else {
+        throw new Error(response.data.message || '取消订单操作未成功');
+      }
+    } catch (err) {
+      console.error('取消订单失败 (Store):', err);
+      throw err; 
     }
-    selectAll.value = selectedOrders.value.length === orders.value.length
   }
 
-  const totalAmount = computed(() => {
-    return selectedOrders.value.reduce((sum, order) => sum + (order.amount || 0), 0)
-  })
+  async function reviewOrder(orderId, reviewData) {
+    try {
+      const response = await orderAPI.reviewOrder(orderId, reviewData);
+      if (response.data && response.data.success) {
+        await loadOrders();
+      } else {
+        throw new Error(response.data.message || '评价订单操作未成功');
+      }
+    } catch (err) {
+      console.error('评价订单失败 (Store):', err);
+      throw err;
+    }
+  }
+
+  async function deleteOrder(orderId) {
+    try {
+      const response = await orderAPI.deleteOrder(orderId);
+      if (response.data && response.data.success) {
+        await loadOrders();
+      } else {
+        throw new Error(response.data.message || '删除订单操作未成功');
+      }
+    } catch (err)
+    {
+      console.error('删除订单失败 (Store):', err);
+      throw err;
+    }
+  }
 
   return {
     activeTab,
     orders,
-    imageFailed,
-    selectedOrders,
-    selectAll,
-    requests, // 导出 requests
+    requests,
     groupedOrders,
-    totalAmount,
+    isLoading,
+    error,
     loadOrders,
     handleTabChange,
     publishNewOrder,
-    handleImageError,
-    toggleSelectAll,
-    toggleOrderSelection,
-    addRequest, // 导出 addRequest 方法
+    addRequest,
+    cancelOrder,
+    reviewOrder,
+    deleteOrder
   }
 })

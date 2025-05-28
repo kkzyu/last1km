@@ -1,209 +1,96 @@
 <template>
-    <div class="page-container">
-        <span class="back-icon" @click="$router.push('/profile')">
-            <i class="fas fa-angle-left"></i>
-        </span>
-        <h2 class="title">历史订单</h2>
-    </div>
-    
-    <div class="orders-list">
-        <div v-for="order in orders" :key="order.id" class="order-card">
-            <div v-if="order.status === '已完成'" class="order-content">
-                <div class="order-header">
-                    <span class="order-id">订单 #{{ order.id }}</span>
-                    <span class="order-status completed">{{ order.status }}</span>
-                </div>
-                <div class="order-details">
-                    <div class="detail-item">
-                        <i class="fa fa-clock-o"></i>
-                        <span>{{ order.date }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <i class="fa fa-shopping-bag"></i>
-                        <span>{{ order.items }}件商品</span>
-                    </div>
-                    <div class="detail-item total-price">
-                        <i class="fa fa-cny"></i>
-                        <span>{{ order.total }}</span>
-                    </div>
-                </div>
-                
-                <div class="rating-section">
-                    <span class="rating-prompt">评价订单</span>
-                    <div class="stars">
-                        <span v-for="n in 5" :key="n" @click="rateOrder(order.id, n)">
-                            <i class="fa fa-star" :class="{ 'rated': n <= (order.rating || 0) }"></i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="profile-order-history">
+    <ProfileOrderHeader />
+    <a-layout class="home-layout">
+      <a-layout-content class="home-content">
+        <order-history 
+          @publish="publishNewOrder"
+          @cancel="handleCancelOrder"
+          @review="handleReviewOrder"
+          @delete="handleDeleteOrder"
+        />
+      </a-layout-content>
+    </a-layout>
+  </div>
 </template>
 
 <script setup>
-import information from '@/assets/data/information.json'
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useOrderStore } from '@/stores/orderStore';
+import OrderHistory from '@/components/Home/HomeOrderhistory.vue';
+import { message } from 'ant-design-vue';
+import ProfileOrderHeader from '@/components/Header/ProfileOrderHeader.vue';
 
-const orders = information.orders
+const router = useRouter();
+const orderStore = useOrderStore();
 
-const rateOrder = (orderId, rating) => {
-    // 这里可以添加评价逻辑
-    console.log(`订单 ${orderId} 评价为 ${rating} 星`);
-}
+onMounted(() => {
+  orderStore.loadOrders();
+});
+
+const handleCancelOrder = async (orderId) => {
+  try {
+    await orderStore.cancelOrder(orderId);
+    message.success('订单已取消');
+  } catch (error) {
+    message.error(error.message || '取消订单失败');
+  }
+};
+
+const handleReviewOrder = async (orderId) => {
+  try {
+    const ratingInput = prompt('请输入评价星级 (1-5):');
+    if (ratingInput === null) return; 
+
+    const comment = prompt('请输入评价内容:');
+    if (comment === null) return; 
+    
+    const rating = parseInt(ratingInput);
+    if (ratingInput && comment && !isNaN(rating) && rating >= 1 && rating <= 5) {
+      await orderStore.reviewOrder(orderId, { rating: rating, comment });
+      message.success('评价成功');
+    } else {
+      message.warning('请输入有效的评价星级 (1-5的数字) 和评价内容。');
+    }
+  } catch (error) {
+    message.error(error.message || '评价失败');
+  }
+};
+
+const handleDeleteOrder = async (orderId) => {
+  try {
+    //可以添加二次确认
+    if (!confirm('确定要删除此订单吗？')) return;
+    await orderStore.deleteOrder(orderId);
+    message.success('订单已删除');
+  } catch (error) {
+    message.error(error.message || '删除订单失败');
+  }
+};
+
+const publishNewOrder = () => {
+  router.push('/publish');
+};
 </script>
 
 <style scoped>
-@import url("https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/font-awesome/4.7.0/css/font-awesome.min.css");
-
-.page-container {
-    display: flex;
-    padding: 20px;
-    align-items: center;
-    background-color: #f8f9fa;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    position: sticky;
-    top: 0;
-    z-index: 10;
+.profile-order-history {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100vh; /* 至少填满屏幕 */
+  max-height: 840px; /* 移除最大高度限制 */
 }
 
-.back-icon {
-    font-size: 24px;
-    color: #333;
-    cursor: pointer;
-    transition: color 0.2s;
+.home-layout {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden; /* 防止内容溢出 */
 }
 
-.back-icon:hover {
-    color: #1890ff;
-}
-
-.title {
-    flex: 1;
-    text-align: center;
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-}
-
-.orders-list {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.order-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.order-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.order-content {
-    padding: 16px;
-}
-
-.order-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.order-id {
-    font-weight: 600;
-    color: #333;
-}
-
-.order-status {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.order-status.completed {
-    background-color: #e6f7ff;
-    color: #1890ff;
-}
-
-.order-details {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #666;
-    font-size: 14px;
-}
-
-.detail-item i {
-    width: 16px;
-    text-align: center;
-    color: #999;
-}
-
-.detail-item.total-price {
-    font-weight: 600;
-    color: #333;
-    margin-top: 8px;
-}
-
-.detail-item.total-price i {
-    color: #ff4d4f;
-}
-
-.rating-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 12px;
-    border-top: 1px dashed #eee;
-}
-
-.rating-prompt {
-    font-size: 14px;
-    color: #666;
-}
-
-.stars {
-    display: flex;
-    gap: 8px;
-}
-
-.stars span {
-    cursor: pointer;
-}
-
-.stars i {
-    color: #ddd;
-    font-size: 18px;
-    transition: color 0.2s;
-}
-
-.stars i.rated {
-    color: #ffc53d;
-}
-
-.stars:hover i {
-    color: #ffc53d;
-}
-
-.stars i:hover ~ i {
-    color: #ddd;
+.home-content {
+  height: 100%;
+  overflow-y: auto;
 }
 </style>
