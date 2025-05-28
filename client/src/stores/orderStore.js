@@ -1,6 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import information from '@/assets/data/information.json'
+import { 
+  createOrder, 
+  getMyOrders, 
+  getOrderDetail, 
+  cancelOrder as apiCancelOrder,
+  restoreOrder as apiRestoreOrder,
+  reviewOrder as apiReviewOrder,
+  uploadOrderImage
+} from '@/api/order.js'
+// import information from '@/assets/data/information.json'
 import axios from 'axios';
 
 export const useOrderStore = defineStore('order', () => {
@@ -12,6 +21,7 @@ export const useOrderStore = defineStore('order', () => {
   const requests = ref([]) // 委托请求数组
   const currentOrderDetail = ref(null);
   const loading = ref(false);
+  const error = ref(null);
 
   const groupedOrders = computed(() => {
     const groups = {}
@@ -23,10 +33,6 @@ export const useOrderStore = defineStore('order', () => {
     })
     return groups
   })
-
-  function loadOrders() {
-    orders.value = information.orders
-  }
 
   function handleTabChange(tab) {
     activeTab.value = tab
@@ -76,21 +82,6 @@ export const useOrderStore = defineStore('order', () => {
     selectAll.value = selectedOrders.value.length === orders.value.length
   }
 
-// 添加恢复订单方法
-  async function restoreOrder(orderId) {
-    try {
-      const response = await axios.put(`/api/orders/${orderId}/restore`);
-      // 更新本地订单状态
-      const index = orders.value.findIndex(order => order.id === orderId);
-      if (index !== -1) {
-        orders.value[index].order_status = 'pending';
-      }
-      return response.data;
-    } catch (error) {
-      console.error('恢复订单失败:', error);
-      throw error;
-    }
-  }
   
   // 添加订单详情获取方法
   async function fetchOrderDetail(orderId) {
@@ -104,32 +95,120 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
   
-  // 添加评价订单方法
-  async function reviewOrder(orderId, reviewData) {
-    try {
-      const response = await axios.post(`/api/orders/${orderId}/review`, reviewData);
-      return response.data;
-    } catch (error) {
-      console.error('评价订单失败:', error);
-      throw error;
-    }
-  }
-  
-  // 添加取消订单方法
-  async function cancelOrder(orderId) {
-    try {
-      const response = await axios.put(`/api/orders/${orderId}/cancel`);
-      // 更新本地订单状态
-      const index = orders.value.findIndex(order => order.id === orderId);
-      if (index !== -1) {
-        orders.value[index].order_status = 'cancelled';
+  const loadOrders=async()=> {
+      loading.value = true
+      error.value = null
+      try {
+        const response = await getMyOrders()
+        orders.value = response.data || []
+      } catch (error) {
+        error.value = error.message
+        console.error('加载订单失败:', error)
+      } finally {
+        loading.value = false
       }
-      return response.data;
-    } catch (error) {
-      console.error('取消订单失败:', error);
-      throw error;
     }
-  }
+
+    // 新增：提交订单（将草稿转为正式订单）
+    const submitOrders=async()=> {
+      loading.value = true
+      error.value = null
+      
+      try {
+        const submittedOrders = []
+        
+        for (const request of this.requests) {
+          // 构造后端期望的数据格式
+          const orderData = {
+            start_address: request.origin,
+            end_address: request.destination,
+            item_description: request.description,
+            pickup_code: request.orderInfo.pickupCode || '',
+            locker_number: request.orderInfo.lockerNumber || '',
+            total_amount: request.amount,
+            coupon_discount: 0, // 后续可以从 request 中获取
+            image_url: request.orderInfo.imageUrl || ''
+          }
+          
+          const response = await createOrder(orderData)
+          submittedOrders.push(response.data)
+        }
+        
+        // 提交成功后清空草稿
+        requests.value = []
+        
+        // 重新加载订单列表
+        await this.loadOrders()
+        
+        return submittedOrders
+      } catch (error) {
+        error.value = error.message
+        throw error
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // 新增：取消订单
+     const cancelOrder=async(orderId)=> {
+      try {
+        await apiCancelOrder(orderId)
+        // 更新本地状态
+        const order = orders.value.find(o => o.id === orderId)
+        if (order) {
+          order.order_status = 'cancelled'
+          order.cancelled_at = new Date().toISOString()
+        }
+      } catch (error) {
+        error.value = error.message
+        throw error
+      }
+    }
+
+    // 新增：恢复订单
+    const restoreOrder =async(orderId)=> {
+      try {
+        await apiRestoreOrder(orderId)
+        const order = this.orders.find(o => o.id === orderId)
+        if (order) {
+          order.order_status = 'pending'
+          order.cancelled_at = null
+        }
+      } catch (error) {
+        error.value = error.message
+        throw error
+      }
+    }
+
+    // 新增：评价订单
+     const reviewOrder=async(orderId, reviewData)=> {
+      try {
+        await apiReviewOrder(orderId, reviewData)
+        const order = this.orders.find(o => o.id === orderId)
+        if (order) {
+          order.user_rating = reviewData.rating
+          order.user_review = reviewData.comment
+          order.review_time = new Date().toISOString()
+        }
+      } catch (error) {
+        error.value = error.message
+        throw error
+      }
+    }
+
+    // 新增：上传订单图片
+     const uploadImage = async(file)=> {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        const response = await uploadOrderImage(formData)
+        return response.data.url
+      } catch (error) {
+        error.value = error.message
+        throw error
+      }
+    }
   
 
   const totalAmount = computed(() => {
@@ -146,6 +225,7 @@ export const useOrderStore = defineStore('order', () => {
     requests, // 导出 requests
     groupedOrders,
     totalAmount,
+    error,
     loadOrders,
     handleTabChange,
     publishNewOrder,
@@ -157,5 +237,7 @@ export const useOrderStore = defineStore('order', () => {
     reviewOrder,
     restoreOrder,
     cancelOrder,
+    uploadImage,
+    submitOrders
   }
 })

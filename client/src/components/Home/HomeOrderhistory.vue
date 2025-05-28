@@ -1,236 +1,368 @@
+// 完全重构此组件以显示真实数据
+
 <template>
-  <section class="history-orders">
+  <div class="order-history">
     <div class="section-header">
-      <a-typography-title :level="4" style="margin: 0">我的历史订单</a-typography-title>
-      <a-button 
-        type="primary" 
-        class="publish-button"
-        @click="emit('publish')"
-      >
-        发布委托 +
+      <h3>我的历史订单</h3>
+      <a-button type="primary" @click="$emit('publish')">
+        发布委托
       </a-button>
     </div>
 
-    <div class="order-list">
-      <template 
-        v-for="(group, date) in groupedOrders" 
-        :key="date"
-      >
-        <a-card 
-          v-for="order in group"
+    <div class="order-list" v-if="!orderStore.loading">
+      <div v-if="orderStore.orders.length === 0" class="empty-state">
+        <a-empty description="暂无订单">
+          <a-button type="primary" @click="$emit('publish')">
+            发布第一个委托
+          </a-button>
+        </a-empty>
+      </div>
+      
+      <div v-else>
+        <div 
+          v-for="order in orderStore.orders" 
           :key="order.id"
           class="order-item"
-          :bordered="true"
-          :bodyStyle="{ padding: '15px', display: 'flex', gap: '15px', alignItems: 'flex-start' }"
+          @click="viewOrderDetail(order.id)"
         >
-          <div class="order-image">
-            <img 
-              :src="getImageUrl(order.image)" 
-              alt="订单图片"
-              @error="handleImageError(order.id)"
-            >
-            <div v-if="!order.image" class="image-placeholder">暂无图片</div>
+          <div class="order-header">
+            <div class="order-info">
+              <span class="order-id">订单 #{{ order.id }}</span>
+              <span :class="['order-status', `status-${order.order_status}`]">
+                {{ getStatusText(order.order_status) }}
+              </span>
+            </div>
+            <div class="order-time">
+              {{ formatTime(order.created_at) }}
+            </div>
           </div>
 
-          <div class="order-details">
-            <a-tag :color="getStatusColor(order.status)" class="order-status">
-              {{ order.status }}
-            </a-tag>
-            <a-typography-paragraph 
-              class="order-id" 
-              @click="$router.push(`/order/${order.id}`)"
-              style="cursor: pointer;"
-            >
-              订单号：{{ order.id }}
-            </a-typography-paragraph>
-            <a-typography-paragraph>{{ order.from }} → {{ order.to }}</a-typography-paragraph>
-            <a-typography-paragraph>速递物品：{{ order.item }}</a-typography-paragraph>
-            <a-typography-paragraph v-if="order.eta">
-              预计 <a-typography-text type="danger"><strong>{{ order.eta }}</strong></a-typography-text> 分钟后送达
-            </a-typography-paragraph>
-            <a-typography-paragraph v-else-if="order.description">
-              {{ order.description }}
-            </a-typography-paragraph>
+          <div class="order-content">
+            <div class="addresses">
+              <div class="address-item">
+                <span class="label">起点:</span>
+                <span class="value">{{ order.start_address }}</span>
+              </div>
+              <div class="address-item">
+                <span class="label">终点:</span>
+                <span class="value">{{ order.end_address }}</span>
+              </div>
+            </div>
+
+            <div class="order-description" v-if="order.item_description">
+              {{ order.item_description }}
+            </div>
+
+            <div class="order-footer">
+              <div class="amount">
+                ¥{{ order.actual_amount.toFixed(2) }}
+              </div>
+              
+              <div class="actions">
+                <!-- 待接单状态可以取消 -->
+                <a-button 
+                  v-if="order.order_status === 'pending'" 
+                  size="small" 
+                  @click.stop="handleCancel(order.id)"
+                >
+                  取消
+                </a-button>
+                
+                <!-- 已取消状态可以恢复 -->
+                <a-button 
+                  v-if="order.order_status === 'cancelled'" 
+                  size="small" 
+                  type="primary"
+                  @click.stop="handleRestore(order.id)"
+                >
+                  恢复
+                </a-button>
+                
+                <!-- 已完成状态可以评价 -->
+                <a-button 
+                  v-if="order.order_status === 'completed' && !order.user_rating" 
+                  size="small" 
+                  type="primary"
+                  @click.stop="handleReview(order.id)"
+                >
+                  评价
+                </a-button>
+
+                <!-- 已评价显示评分 -->
+                <div v-if="order.user_rating" class="rating">
+                  <a-rate :value="order.user_rating" disabled size="small" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="order-actions">
-            <a-button
-              v-if="order.status !== '已完成'"
-              danger
-              :disabled="order.status !== '进行中'"
-              @click="emit('cancel', order.id)"
-              size="small"
-            >
-              取消订单
-            </a-button>
-            <a-button
-              v-if="order.status === '已完成'"
-              type="primary"
-              @click="emit('review', order.id)"
-              size="small"
-            >
-              评价订单
-            </a-button>
-            <a-button
-              v-if="order.status === '已取消'"
-              type="primary"
-              style="background-color: #4CAF50; border-color: #4CAF50;" 
-              @click="emit('restore', order.id)"
-              size="small"
-            >
-              恢复订单
-            </a-button>
+          <!-- 配送员信息 (如果已接单) -->
+          <div v-if="order.deliverer" class="deliverer-info">
+            <span>配送员: {{ order.deliverer.name }}</span>
+            <span class="deliverer-phone">{{ order.deliverer.phone }}</span>
           </div>
-        </a-card>
-      </template>
+        </div>
+      </div>
     </div>
-  </section>
+
+    <div v-else class="loading">
+      <a-spin size="large" />
+    </div>
+
+    <!-- 评价对话框 -->
+    <a-modal
+      v-model:open="reviewModalVisible"
+      title="订单评价"
+      @ok="submitReview"
+      @cancel="closeReviewModal"
+    >
+      <div class="review-form">
+        <div class="form-item">
+          <label>评分:</label>
+          <a-rate v-model:value="reviewForm.rating" />
+        </div>
+        <div class="form-item">
+          <label>评价:</label>
+          <a-textarea 
+            v-model:value="reviewForm.comment" 
+            placeholder="请输入您的评价..."
+            :rows="4"
+          />
+        </div>
+      </div>
+    </a-modal>
+  </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useOrderStore } from '@/stores/orderStore';
+import { ref, onMounted } from 'vue'
+import { useOrderStore } from '@/stores/orderStore'
+import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 
-// 使用Pinia store
-const orderStore = useOrderStore();
-const groupedOrders = computed(() => orderStore.groupedOrders);
+// 定义事件
+defineEmits(['publish'])
 
-const emit = defineEmits(['publish', 'cancel', 'review', 'restore', 'image-error']);
-const BASE_URL = import.meta.env.BASE_URL;
+const orderStore = useOrderStore()
+const router = useRouter()
 
-const getImageUrl = (imagePath) => {
-  if (!imagePath || typeof imagePath !== 'string') {
-    return '';
+// 评价相关状态
+const reviewModalVisible = ref(false)
+const currentReviewOrderId = ref(null)
+const reviewForm = ref({
+  rating: 5,
+  comment: ''
+})
+
+onMounted(() => {
+  orderStore.loadOrders()
+})
+
+// 状态文本映射
+const getStatusText = (status) => {
+  const statusMap = {
+    'pending': '待接单',
+    'accepted': '已接单',
+    'delivering': '配送中',
+    'completed': '已完成',
+    'cancelled': '已取消'
   }
-
-  if (BASE_URL === '/') {
-    return imagePath;
-  }
-
-  const cleanBase = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-  return `${cleanBase}${imagePath}`;
+  return statusMap[status] || status
 }
 
-// 获取状态对应的颜色
-const getStatusColor = (status) => {
-  switch(status) {
-    case '进行中': return 'processing';
-    case '已完成': return 'success';
-    case '已取消': return 'error';
-    default: return 'default';
+// 时间格式化
+const formatTime = (timeString) => {
+  const date = new Date(timeString)
+  const now = new Date()
+  const diff = now - date
+  
+  if (diff < 60000) return '刚刚'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  
+  return date.toLocaleDateString('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 处理订单操作
+const handleCancel = async (orderId) => {
+  try {
+    await orderStore.cancelOrder(orderId)
+    message.success('订单已取消')
+  } catch (error) {
+    message.error('取消失败')
   }
 }
 
-// 图片错误处理函数
-const handleImageError = (orderId) => {
-  console.error('图片加载失败:', orderId);
-  emit('image-error', orderId);
+const handleRestore = async (orderId) => {
+  try {
+    await orderStore.restoreOrder(orderId)
+    message.success('订单已恢复')
+  } catch (error) {
+    message.error('恢复失败')
+  }
+}
+
+const handleReview = (orderId) => {
+  currentReviewOrderId.value = orderId
+  reviewModalVisible.value = true
+}
+
+const submitReview = async () => {
+  try {
+    await orderStore.reviewOrder(currentReviewOrderId.value, reviewForm.value)
+    message.success('评价成功')
+    closeReviewModal()
+  } catch (error) {
+    message.error('评价失败')
+  }
+}
+
+const closeReviewModal = () => {
+  reviewModalVisible.value = false
+  currentReviewOrderId.value = null
+  reviewForm.value = { rating: 5, comment: '' }
+}
+
+const viewOrderDetail = (orderId) => {
+  router.push(`/order/${orderId}`)
 }
 </script>
 
 <style scoped>
-.history-orders {
-  padding: 15px;
-  flex: 1;
-  overflow-y: auto; 
-  height: 0;  
-  padding-bottom: 55px;
-  background-color: #fff; /* 内容区域使用白色背景 */
+.order-history {
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  margin: 16px;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
-.publish-button {
-  border-radius: 20px; /* 保持胶囊形状 */
-  font-size: 1em;
-  /* Ant Design primary button 会自动使用主题色, 无需额外颜色设置 */
+.order-item {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.order-list .order-item {
-  margin-bottom: 15px;
-  border-radius: 10px; /* 统一圆角为 10px */
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* 统一阴影 */
+.order-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
 }
 
-.order-list .order-item:last-child {
-  margin-bottom: 25px;
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.order-image {
-  width: 100px;
-  height: 120px;
-  border-radius: 8px; /* 图片容器圆角 */
-  overflow: hidden;
-  flex-shrink: 0;
-  position: relative;
-  background: #f5f5f5;
+.order-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.order-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.image-placeholder {
-  position: absolute;
-  top: 50%;
-  left: 0%;
-  transform: translate(-50%, -50%);
-  color: #999;
-  font-size: 0.9em;
-}
-
-.order-details {
-  flex: 1;
-  min-width: 0;
+.order-id {
+  font-weight: 500;
 }
 
 .order-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.status-pending { background: #fff7e6; color: #fa8c16; }
+.status-accepted { background: #e6f7ff; color: #1890ff; }
+.status-delivering { background: #f6ffed; color: #52c41a; }
+.status-completed { background: #f6ffed; color: #52c41a; }
+.status-cancelled { background: #fff2f0; color: #ff4d4f; }
+
+.order-time {
+  font-size: 12px;
+  color: #666;
+}
+
+.addresses {
   margin-bottom: 8px;
-  letter-spacing: 0.5px;
-  display: inline-block;
 }
 
-:deep(.ant-typography) {
-  font-size: 0.9em;
-  color: #333; /* 常规文字颜色 */
-  margin: 5px 0;
-  line-height: 1.4;
-  letter-spacing: 0.3px;
-  /* 移除了 font-family, 使用 Ant Design 默认或全局字体 */
-  font-weight: 400;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+.address-item {
+  margin-bottom: 4px;
+  font-size: 14px;
 }
 
-.order-actions {
+.label {
+  color: #666;
+  margin-right: 8px;
+}
+
+.order-description {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.order-footer {
   display: flex;
-  flex-direction: column;
-  gap: 8px;  
-  margin-left: auto;
-  width: 65px; /* 根据按钮实际宽度可能需要微调 */
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* 确保按钮大小和间距适合小空间 */
-.order-actions .ant-btn-sm {
-  padding-left: 0;
-  padding-right: 0;
-  width: 100%; /* 让按钮宽度一致 */
+.amount {
+  font-weight: 500;
+  color: #ff4d4f;
+  font-size: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.deliverer-info {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #666;
+}
+
+.deliverer-phone {
+  margin-left: 16px;
+}
+
+.review-form .form-item {
+  margin-bottom: 16px;
+}
+
+.review-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.loading {
   text-align: center;
+  padding: 40px;
 }
 
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  /* :deep(.ant-typography) 已经设置了文本溢出处理, 这里可能无需重复 */
+.empty-state {
+  text-align: center;
+  padding: 40px;
 }
 </style>

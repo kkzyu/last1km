@@ -28,6 +28,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useOrderStore } from '@/stores/orderStore' // Assuming this store has selectedOrders and totalAmount for checkout
+import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 
 const props = defineProps({
   totalTaskAmount: { // Renamed from taskAmountFromForm for clarity
@@ -37,7 +39,7 @@ const props = defineProps({
 })
 
 const orderStore = useOrderStore() // This might be for selected items, not the total from forms
-
+const router = useRouter()
 // This selectAll likely refers to items in a cart or list, not the forms themselves.
 // If it's for the forms, the logic needs to be in the parent.
 const selectAll = computed({
@@ -66,10 +68,28 @@ const handleCouponSelect = () => {
   // Implement coupon selection logic
 }
 
-const handleCheckout = () => {
-  if (isCheckoutDisabled.value) return;
-  console.log('Checkout clicked with total:', props.totalTaskAmount);
-  // Implement checkout logic
+const handleCheckout = async () => {
+  if (!totalTaskAmount || totalTaskAmount <= 0) {
+    message.warning('请先添加委托订单')
+    return
+  }
+
+  try {
+    // 显示加载状态
+    const hide = message.loading('正在提交订单...', 0)
+    
+    // 调用 store 的提交方法
+    await orderStore.submitOrders()
+    
+    hide()
+    message.success('订单提交成功！')
+    
+    // 跳转到首页查看订单
+    router.push('/')
+  } catch (error) {
+    hide()
+    message.error(`提交失败: ${error.message}`)
+  }
 }
 </script>
 

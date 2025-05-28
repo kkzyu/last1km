@@ -60,6 +60,10 @@ def create_app():
         app.logger.setLevel(logging.INFO)
         app.logger.info('Last1km startup')
     
+    if app.config.get('TESTING', False) or app.config.get('DEBUG', True):
+        from routes.test_data import test_data_bp
+        app.register_blueprint(test_data_bp, url_prefix='/api/test')
+
     # 创建数据库表
     with app.app_context():
         try:
