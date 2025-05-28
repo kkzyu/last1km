@@ -175,7 +175,7 @@ def restore_order(order_id):
         return success_response(order.to_dict(), "订单恢复成功")
         
     except Exception as e:
-        ad.session.rollback()
+        db.session.rollback()
         return error_response(f"恢复订单失败: {str(e)}", 500)
 
 

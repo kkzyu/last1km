@@ -138,7 +138,7 @@ export const useOrderStore = defineStore('order', () => {
         requests.value = []
         
         // 重新加载订单列表
-        await this.loadOrders()
+        await loadOrders()
         
         return submittedOrders
       } catch (error) {
@@ -169,7 +169,7 @@ export const useOrderStore = defineStore('order', () => {
     const restoreOrder =async(orderId)=> {
       try {
         await apiRestoreOrder(orderId)
-        const order = this.orders.find(o => o.id === orderId)
+        const order = orders.value.find(o => o.id === orderId)
         if (order) {
           order.order_status = 'pending'
           order.cancelled_at = null
@@ -184,7 +184,7 @@ export const useOrderStore = defineStore('order', () => {
      const reviewOrder=async(orderId, reviewData)=> {
       try {
         await apiReviewOrder(orderId, reviewData)
-        const order = this.orders.find(o => o.id === orderId)
+        const order = orders.value.find(o => o.id === orderId)
         if (order) {
           order.user_rating = reviewData.rating
           order.user_review = reviewData.comment

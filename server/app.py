@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 from models import db
 from config import Config
 import logging
@@ -18,15 +19,27 @@ def create_app():
          supports_credentials=True
     )
     
+    # JWT 配置
+    app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # 请更改为更安全的密钥
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False    # Token不过期（开发环境）
+    
+    jwt = JWTManager(app)
+
+    # 数据库配置
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///last1km.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
     # 初始化数据库
     db.init_app(app)
     
     # 注册蓝图
     from routes.auth import auth_bp
     from routes.address import address_bp
+    from routes.orders import orders_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(address_bp)
+    app.register_blueprint(orders_bp, url_prefix='/api/orders')
     
     # 添加根路由用于测试
     @app.route('/')

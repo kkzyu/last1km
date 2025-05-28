@@ -43,9 +43,22 @@ class Order(db.Model):
     
     # 关系
     user = db.relationship('User', backref='orders')
-    deliverer = db.relationship('Deliverer', backref='delivered_orders')
+    # deliverer = db.relationship('Deliverer', backref='delivered_orders')
     
     def to_dict(self):
+        from models.deliverer import Deliverer
+        
+        deliverer_info = None
+        if self.deliverer_id:
+            deliverer = Deliverer.query.get(self.deliverer_id)
+            if deliverer:
+                deliverer_info = {
+                    'id': deliverer.id,
+                    'name': deliverer.name,
+                    'phone': deliverer.phone,
+                    'rating': deliverer.rating
+                }
+        
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -66,5 +79,5 @@ class Order(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None,
-            'deliverer': self.deliverer.to_dict() if self.deliverer else None
+            'deliverer': deliverer_info
         }
