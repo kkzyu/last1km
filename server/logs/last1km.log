@@ -27,3 +27,4 @@
 2025-05-28 08:49:48,469 INFO: 密码验证成功: gdd [in F:\202502\github\last1km\server\services\auth_service.py:94]
 2025-05-28 08:49:48,471 INFO: Token生成成功 for user_id: 1 [in F:\202502\github\last1km\server\services\auth_service.py:133]
 2025-05-28 08:49:48,485 INFO: 用户登录成功: gdd [in F:\202502\github\last1km\server\services\auth_service.py:109]
+2025-05-28 09:03:58,236 INFO: Last1km startup [in F:\202502\github\last1km\server\app.py:61]

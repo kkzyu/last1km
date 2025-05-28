@@ -145,12 +145,9 @@ const routes = [
   },
   {
   path: '/profile/addresses',
-  name: 'address-management',
+  name: 'AddressManagement',
   component: () => import('@/components/Profile/AddressManagement.vue'),
-  meta: { 
-    requiresAuth: true,
-    title: '地址管理'
-  }
+  meta: { requiresAuth: true }
   },
   {
   path: '/order/:id',

@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
+from flask_cors import cross_origin
 from models.address import Address
 from models.user import User
 from utils.auth_helpers import token_required
@@ -6,10 +7,14 @@ from models import db
 
 address_bp = Blueprint('address', __name__, url_prefix='/api/address')
 
-@address_bp.route('/list', methods=['GET'])
+@address_bp.route('/list', methods=['GET', 'OPTIONS'])
+@cross_origin()
 @token_required
 def get_addresses(current_user):
     """获取用户地址列表"""
+    if request.method == 'OPTIONS':
+        return jsonify({'code': 200, 'message': 'OK'}), 200
+        
     try:
         # 获取查询参数
         address_type = request.args.get('type')  # pickup 或 delivery
@@ -29,10 +34,14 @@ def get_addresses(current_user):
         current_app.logger.error(f"获取地址列表异常: {str(e)}")
         return jsonify({'code': 500, 'message': '服务器内部错误'}), 500
 
-@address_bp.route('/add', methods=['POST'])
+@address_bp.route('/add', methods=['POST', 'OPTIONS'])
+@cross_origin()
 @token_required
 def add_address(current_user):
     """添加地址"""
+    if request.method == 'OPTIONS':
+        return jsonify({'code': 200, 'message': 'OK'}), 200
+        
     try:
         data = request.get_json()
         if not data:
@@ -82,10 +91,14 @@ def add_address(current_user):
         current_app.logger.error(f"添加地址异常: {str(e)}")
         return jsonify({'code': 500, 'message': '服务器内部错误'}), 500
 
-@address_bp.route('/update/<int:address_id>', methods=['PUT'])
+@address_bp.route('/update/<int:address_id>', methods=['PUT', 'OPTIONS'])
+@cross_origin()
 @token_required
 def update_address(current_user, address_id):
     """更新地址"""
+    if request.method == 'OPTIONS':
+        return jsonify({'code': 200, 'message': 'OK'}), 200
+        
     try:
         address = Address.query.filter_by(id=address_id, user_id=current_user.id).first()
         if not address:
@@ -125,10 +138,14 @@ def update_address(current_user, address_id):
         current_app.logger.error(f"更新地址异常: {str(e)}")
         return jsonify({'code': 500, 'message': '服务器内部错误'}), 500
 
-@address_bp.route('/delete/<int:address_id>', methods=['DELETE'])
+@address_bp.route('/delete/<int:address_id>', methods=['DELETE', 'OPTIONS'])
+@cross_origin()
 @token_required
 def delete_address(current_user, address_id):
     """删除地址"""
+    if request.method == 'OPTIONS':
+        return jsonify({'code': 200, 'message': 'OK'}), 200
+        
     try:
         address = Address.query.filter_by(id=address_id, user_id=current_user.id).first()
         if not address:
@@ -147,10 +164,14 @@ def delete_address(current_user, address_id):
         current_app.logger.error(f"删除地址异常: {str(e)}")
         return jsonify({'code': 500, 'message': '服务器内部错误'}), 500
 
-@address_bp.route('/default', methods=['GET'])
+@address_bp.route('/default', methods=['GET', 'OPTIONS'])
+@cross_origin()
 @token_required
 def get_default_addresses(current_user):
     """获取默认地址"""
+    if request.method == 'OPTIONS':
+        return jsonify({'code': 200, 'message': 'OK'}), 200
+        
     try:
         pickup_address = Address.query.filter_by(
             user_id=current_user.id,
@@ -175,35 +196,4 @@ def get_default_addresses(current_user):
         
     except Exception as e:
         current_app.logger.error(f"获取默认地址异常: {str(e)}")
-        return jsonify({'code': 500, 'message': '服务器内部错误'}), 500
-
-@address_bp.route('/set-default/<int:address_id>', methods=['POST'])
-@token_required
-def set_default_address(current_user, address_id):
-    """设置默认地址"""
-    try:
-        address = Address.query.filter_by(id=address_id, user_id=current_user.id).first()
-        if not address:
-            return jsonify({'code': 404, 'message': '地址不存在'}), 404
-        
-        # 取消该类型的其他默认地址
-        Address.query.filter_by(
-            user_id=current_user.id,
-            address_type=address.address_type,
-            is_default=True
-        ).update({'is_default': False})
-        
-        # 设置当前地址为默认
-        address.is_default = True
-        db.session.commit()
-        
-        return jsonify({
-            'code': 200,
-            'message': '设置成功',
-            'data': address.to_dict()
-        }), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"设置默认地址异常: {str(e)}")
         return jsonify({'code': 500, 'message': '服务器内部错误'}), 500
