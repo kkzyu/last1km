@@ -57,6 +57,8 @@ def get_my_orders():
     except Exception as e:
         return error_response(f"获取订单失败: {str(e)}", 500)
 
+# 在现有create_order函数中添加/修改以下内容
+
 @orders_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_order():
@@ -71,10 +73,15 @@ def create_order():
             return error_response("请求数据不能为空", 400)
         
         # 验证必需字段
-        required_fields = ['start_address', 'end_address', 'total_amount', 'actual_amount']
+        required_fields = ['start_address', 'end_address', 'total_amount']
         for field in required_fields:
             if field not in data or not data[field]:
                 return error_response(f"缺少必需字段: {field}", 400)
+        
+        # 计算实付金额
+        total_amount = float(data['total_amount'])
+        coupon_discount = float(data.get('coupon_discount', 0.0))
+        actual_amount = max(0, total_amount - coupon_discount)
         
         # 创建订单
         order = Order(
@@ -84,9 +91,10 @@ def create_order():
             item_description=data.get('item_description', ''),
             pickup_code=data.get('pickup_code', ''),
             locker_number=data.get('locker_number', ''),
-            total_amount=float(data['total_amount']),
-            coupon_discount=float(data.get('coupon_discount', 0.0)),
-            actual_amount=float(data['actual_amount']),
+            total_amount=total_amount,
+            coupon_discount=coupon_discount,
+            actual_amount=actual_amount,
+            image_url=data.get('image_url', ''),  # 前端上传图片后传回的URL
             order_status='pending'
         )
         
@@ -98,6 +106,7 @@ def create_order():
     except ValueError as e:
         return error_response("数据格式错误", 400)
     except Exception as e:
+        db.session.rollback()
         return error_response(f"创建订单失败: {str(e)}", 500)
 
 @orders_bp.route('/<int:order_id>', methods=['GET'])
@@ -140,6 +149,7 @@ def cancel_order(order_id):
         return success_response(order.to_dict(), "订单取消成功")
         
     except Exception as e:
+        db.session.rollback()
         return error_response(f"取消订单失败: {str(e)}", 500)
 
 @orders_bp.route('/<int:order_id>/restore', methods=['PUT'])
@@ -165,7 +175,13 @@ def restore_order(order_id):
         return success_response(order.to_dict(), "订单恢复成功")
         
     except Exception as e:
+        ad.session.rollback()
         return error_response(f"恢复订单失败: {str(e)}", 500)
+
+
+import os
+import time
+from werkzeug.utils import secure_filename
 
 @orders_bp.route('/upload-image', methods=['POST'])
 @jwt_required()
@@ -182,10 +198,10 @@ def upload_order_image():
         
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            # 添加时间戳避免文件名冲突
-            import time
+            # 添加时间戳和用户ID避免文件名冲突
             timestamp = str(int(time.time()))
-            filename = f"{timestamp}_{filename}"
+            user_id = get_jwt_identity()
+            filename = f"{user_id}_{timestamp}_{filename}"
             
             # 确保上传目录存在
             upload_dir = 'uploads/order_images'
@@ -194,16 +210,26 @@ def upload_order_image():
             file_path = os.path.join(upload_dir, filename)
             file.save(file_path)
             
+            # 生成访问URL
+            image_url = f"/api/uploads/order_images/{filename}"
+            
             return success_response({
                 'filename': filename,
                 'file_path': file_path,
-                'url': f"/uploads/order_images/{filename}"
+                'url': image_url
             }, "图片上传成功")
         else:
             return error_response("不支持的文件格式", 400)
             
     except Exception as e:
         return error_response(f"上传失败: {str(e)}", 500)
+
+# 添加静态文件服务路由
+@orders_bp.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    """提供上传文件的访问"""
+    from flask import send_from_directory
+    return send_from_directory('uploads', filename)
 
 @orders_bp.route('/statistics', methods=['GET'])
 @jwt_required()
@@ -276,8 +302,9 @@ def review_order(order_id):
         order.user_review = data.get('comment', '')
         order.review_time = datetime.utcnow()
         
-        # 如果有配送员，更新配送员评分
+       # 如果有配送员，更新配送员评分
         if order.deliverer_id:
+            from models.deliverer import Deliverer
             # 获取配送员的所有评价
             deliverer_ratings = Order.query.filter_by(
                 deliverer_id=order.deliverer_id,
@@ -296,7 +323,11 @@ def review_order(order_id):
         
         db.session.commit()
         
-        return success_response({"order_id": order_id, "rating": rating}, "评价成功")
+        return success_response({
+            "order_id": order_id, 
+            "rating": rating,
+            "comment": order.user_review
+        }, "评价成功")
         
     except Exception as e:
         db.session.rollback()
