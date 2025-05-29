@@ -49,7 +49,7 @@
       </div>
 
       <div class="profile-item last-item" @click="editField('dormitory', '宿舍', editableDormitory)">
-        <span class="item-label">宿舍</span>
+        <span class="item-label">地址</span>
         <div class="item-content">
           <span class="item-value">{{ editableDormitory || '未设置' }}</span>
           <i class="fas fa-angle-right arrow-icon"></i>

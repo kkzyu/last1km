@@ -47,11 +47,11 @@ const handleImageError = (index) => {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  height: 113px;
+  height: 110px;
 }
 
 :deep(.ant-carousel .slick-slide) {
-  height: 113px;
+  height: 110px;
   overflow: hidden;
   text-align: center;
 }
