@@ -13,6 +13,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
+    upload_folder = app.config.get('UPLOAD_FOLDER')
+    if upload_folder and not os.path.exists(upload_folder):
+        os.makedirs(upload_folder, exist_ok=True)
+    
     # 配置 CORS
     CORS(app, 
          origins=["http://localhost:3000"],
@@ -42,6 +46,25 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(users_bp, url_prefix='/api/users')
+    
+    from flask import send_from_directory
+
+    @app.route('/static/uploads/<filename>')
+    def uploaded_file(filename):
+        upload_folder = app.config.get('UPLOAD_FOLDER')
+        return send_from_directory(upload_folder, filename)
+    
+        # 添加调试路由
+    @app.route('/debug/routes')
+    def debug_routes():
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'rule': str(rule)
+            })
+        return {'routes': routes}
     
     # 创建数据库表
     with app.app_context():

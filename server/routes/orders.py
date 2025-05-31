@@ -13,6 +13,8 @@ import os
 import uuid 
 from werkzeug.utils import secure_filename 
 
+from services.ai_service import ai_service
+
 orders_bp = Blueprint('orders', __name__)
 
 # --- 图片上传路由 (保持您提供的版本) ---
@@ -59,6 +61,42 @@ def upload_order_image(current_user):
             
     return error_response("图片上传失败", 500)
 
+@orders_bp.route('/analyze-image', methods=['POST'])
+@token_required
+def analyze_order_image(current_user):
+    """分析订单图片，提取商品描述和取件信息"""
+    try:
+        data = request.get_json()
+        filename = data.get('filename')
+        
+        if not filename:
+            return success_response({}, "请提供图片文件名", success=False)
+        
+        # 构建图片完整路径
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'server/static/uploads'))
+        image_path = os.path.join(upload_folder, filename)
+        
+        # 检查文件是否存在
+        if not os.path.exists(image_path):
+            return success_response({}, "图片文件不存在", success=False)
+        
+        # 执行OCR识别
+        recognized_text = ai_service.recognize_text(image_path)
+        
+        # 解析订单信息
+        parsed_info = ai_service.parse_order_info(recognized_text)
+        
+        return success_response({
+            'recognizedText': recognized_text,  # 原始识别文本，可用于调试
+            'description': parsed_info['description'],
+            'orderInfo': parsed_info['orderInfo']
+        })
+        
+    except Exception as error:
+        current_app.logger.error(f'AI分析错误: {str(error)}')
+        # 返回正确的错误响应，避免401状态码
+        return error_response(f'AI分析失败: {str(error)}', 500)
+    
 # --- 创建订单 (保持您提供的版本，确保 Order 模型字段正确) ---
 @orders_bp.route('/', methods=['POST'])
 @token_required

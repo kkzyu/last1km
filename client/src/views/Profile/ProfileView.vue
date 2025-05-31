@@ -74,7 +74,7 @@ const navigateTo = (path) => {
   background-color: #F7F8FA;
   padding: 20px;
   padding-bottom: 80px; /* 为 BottomNav 留出空间 */
-  min-height: calc(100vh - 80px); /* 考虑 BottomNav 的高度 */
+  min-height: calc(900px - 80px); /* 考虑 BottomNav 的高度 */
   box-sizing: border-box;
   /* text-align: center; // 从父级移除，让 ProfilePortrait 自己控制对齐 */
 }

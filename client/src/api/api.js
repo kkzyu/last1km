@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// 创建axios实例 (与您提供的代码一致)
+// 创建axios实例
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api', // 确保这是正确的API基础URL
+    baseURL: 'http://localhost:5000/api',
     timeout: 15000,
     withCredentials: true,
     headers: {
@@ -11,13 +11,22 @@ const api = axios.create({
     }
 });
 
-// 请求拦截器 (与您提供的代码一致)
+// 请求拦截器
 api.interceptors.request.use(
     config => {
         const token = localStorage.getItem('authToken');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
+        // 调试信息
+        console.log('API Request:', {
+            method: config.method,
+            url: config.url,
+            baseURL: config.baseURL,
+            fullURL: `${config.baseURL}${config.url}`,
+            headers: config.headers
+        });
+        
         return config;
     },
     error => {
@@ -25,12 +34,24 @@ api.interceptors.request.use(
     }
 );
 
-// 响应拦截器 (与您提供的代码一致)
+// 响应拦截器
 api.interceptors.response.use(
     response => {
+        console.log('API Response:', {
+            status: response.status,
+            url: response.config.url
+        });
         return response;
     },
     async error => {
+        console.error('API Error Details:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            data: error.response?.data
+        });
         if (error.response) {
             if (error.response.status === 401) {
                 localStorage.removeItem('authToken');
@@ -72,10 +93,11 @@ export const orderAPI = {
     reviewOrder: (id, data) => api.post(`/orders/${id}/review`, data),
     deleteOrder: (id) => api.delete(`/orders/${id}`),
     completeOrder: (id) => api.post(`/orders/${id}/complete`),
-    // **新增：图片上传函数**
+    
+    analyzeOrderImage: (data) => api.post('/orders/analyze-image', data),
     uploadOrderImage: (formData) => api.post('/orders/upload_image', formData, {
         headers: {
-            'Content-Type': 'multipart/form-data' // 非常重要，用于文件上传
+            'Content-Type': 'multipart/form-data'
         }
     })
 };
