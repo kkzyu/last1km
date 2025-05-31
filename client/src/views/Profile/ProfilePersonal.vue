@@ -77,7 +77,7 @@
       </a-select>
       <a-input v-if="currentEditField === 'phone'" v-model:value="editModalValue" placeholder="请输入手机号" />
       <a-input v-if="currentEditField === 'school_info'" v-model:value="editModalValue" placeholder="请输入学校信息" />
-      <a-input v-if="currentEditField === 'dormitory'" v-model:value="editModalValue" placeholder="请输入宿舍信息" />
+      <a-input v-if="currentEditField === 'dormitory'" v-model:value="editModalValue" placeholder="请输入地址信息" />
       <div v-if="currentEditField === 'avatar'">
         <p>当前头像:</p>
         <img :src="editableAvatarUrl" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px;" @error="onAvatarError"/>

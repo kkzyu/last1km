@@ -24,11 +24,13 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { authAPI } from '@/api/api';
+import { useUserStore } from '@/stores/userStore'; // 导入 userStore
 import HomeHead from '@/components/Header/HomeHead.vue'
 import BottomNav from '@/components/Bottom/BottomNav.vue'
 
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore(); // 使用 userStore
 
 const username = ref('');
 const password = ref('');
@@ -51,9 +53,8 @@ const handleLogin = async () => {
     });
 
     if (response.data.success) {
-      // 存储认证信息
-      localStorage.setItem('authToken', response.data.data.token);
-      localStorage.setItem('userInfo', JSON.stringify(response.data.data.user));
+      // 使用 userStore.loginSuccess 存储认证信息和用户数据
+      userStore.loginSuccess(response.data.data.token, response.data.data.user);
 
       // 跳转逻辑
       const redirectPath = route.query.redirect || { name: 'home' };

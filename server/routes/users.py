@@ -8,7 +8,7 @@ from utils.auth_helpers import token_required
 
 users_bp = Blueprint('users', __name__)
 
-@users_bp.route('/profile', methods=['GET'])
+@users_bp.route('/profile', methods=['GET', 'OPTIONS'])
 @token_required
 def get_profile(current_user):
     """获取用户资料"""
@@ -17,7 +17,7 @@ def get_profile(current_user):
     except Exception as e:
         return error_response(f"获取用户资料失败: {str(e)}")
 
-@users_bp.route('/profile', methods=['PUT'])
+@users_bp.route('/profile', methods=['PUT', 'OPTIONS'])
 @token_required
 def update_profile(current_user):
     """更新用户资料"""
@@ -36,7 +36,7 @@ def update_profile(current_user):
     except Exception as e:
         return error_response(f"更新用户资料失败: {str(e)}")
 
-@users_bp.route('/addresses', methods=['GET'])
+@users_bp.route('/addresses', methods=['GET', 'OPTIONS'])
 @token_required
 def get_addresses(current_user):
     """获取用户的地址列表"""
@@ -46,7 +46,7 @@ def get_addresses(current_user):
     except Exception as e:
         return error_response(f"获取地址列表失败: {str(e)}")
 
-@users_bp.route('/addresses', methods=['POST'])
+@users_bp.route('/addresses', methods=['POST', 'OPTIONS'])
 @token_required
 def add_address(current_user):
     """添加新地址"""
