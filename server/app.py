@@ -82,10 +82,12 @@ def create_app():
     from routes.auth import auth_bp
     from routes.orders import orders_bp
     from routes.users import users_bp
+    from routes.map import map_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(map_bp, url_prefix='/api/map')
     
     from flask import send_from_directory
 

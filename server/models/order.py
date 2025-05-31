@@ -25,6 +25,20 @@ class Order(db.Model):
     completed_at = db.Column(db.DateTime)
     cancelled_at = db.Column(db.DateTime)
     
+    # 地理位置信息
+    origin_lat = db.Column(db.Float)
+    origin_lng = db.Column(db.Float)
+    dest_lat = db.Column(db.Float)
+    dest_lng = db.Column(db.Float)
+    
+    # 路线信息
+    estimated_duration = db.Column(db.Integer)  # 预计时长(分钟)
+    estimated_distance = db.Column(db.Float)    # 预计距离(公里)
+    
+    # 添加具体地址字段
+    origin_detail = db.Column(db.Text)        # 起点具体地址
+    destination_detail = db.Column(db.Text)   # 终点具体地址
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -44,5 +58,17 @@ class Order(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'accepted_at': self.accepted_at.isoformat() if self.accepted_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None
+            'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None,
+            'origin_location': {
+                'lat': self.origin_lat,
+                'lng': self.origin_lng
+            } if self.origin_lat and self.origin_lng else None,
+            'destination_location': {
+                'lat': self.dest_lat,
+                'lng': self.dest_lng
+            } if self.dest_lat and self.dest_lng else None,
+            'estimated_duration': self.estimated_duration,
+            'estimated_distance': self.estimated_distance,
+            'origin_detail': self.origin_detail,
+            'destination_detail': self.destination_detail,
         }
