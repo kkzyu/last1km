@@ -135,10 +135,7 @@ export const useUserStore = defineStore('user', () => {
     api.defaults.headers.common['Authorization'] = `Bearer ${_token}`;
     updateRecentAccounts(profile); // 登录成功后更新最近账户
   }
-
   function clearUserProfile() {
-    // Note: We don't remove the current user from recentAccounts here.
-    // That should be a separate "remove account from device" action if needed.
     userProfile.value = null;
     token.value = null;
     localStorage.removeItem('token');

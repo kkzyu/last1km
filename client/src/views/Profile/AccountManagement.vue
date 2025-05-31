@@ -65,7 +65,7 @@
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { message, Modal as AModal } from 'ant-design-vue';
-import { computed, reactive } from 'vue'; // 引入 reactive
+import { computed, reactive, nextTick } from 'vue'; // 引入 reactive 和 nextTick
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -148,12 +148,21 @@ const switchToAccount = (usernameToSwitch) => {
     okText: '确定切换',
     cancelText: '取消',
     centered: true,
-    width: '280px',
-    onOk: () => {
+    width: '280px',    onOk: () => {
+      // 清除用户数据
       userStore.clearUserProfile();
-      // 携带用户名到登录页，登录页可以尝试预填
-      router.push({ path: '/login', query: { username: usernameToSwitch } }); 
-      message.info(`请登录 ${usernameToSwitch}`);
+      
+      // 使用setTimeout确保localStorage完全清除后再导航
+      setTimeout(() => {
+        // 再次确认token已被清除
+        if (localStorage.getItem('token')) {
+          localStorage.removeItem('token');
+        }
+        
+        // 携带用户名到登录页，登录页可以尝试预填
+        router.push({ path: '/login', query: { username: usernameToSwitch } }); 
+        message.info(`请登录 ${usernameToSwitch}`);
+      }, 100); // 100ms延迟确保所有操作完成
     },
   });
 };

@@ -13,12 +13,9 @@ const RiderProfilePage = () => import('@/views/Messages/RiderProfilePage.vue')
 
 // Profile sub-routes
 const ProfilePersonal = () => import('@/views/Profile/ProfilePersonal.vue')
-const ProfileWallet = () => import('@/views/Profile/ProfileWallet.vue')
 const ProfileOrderHistory = () => import('@/views/Profile/ProfileOrderHistory.vue')
-const ProfileSetup = () => import('@/views/Profile/ProfileSetup.vue')
 const ProfileSwitchAccount = () => import('@/views/Profile/ProfileSwitchAccount.vue')
 import OrderDetail from '@/views/Order/OrderDetail.vue'
-import AccountManagement from '@/views/Profile/AccountManagement.vue'; // Import the new component
 
 const routes = [
   {
@@ -102,17 +99,11 @@ const routes = [
   },
   {
     path: '/profile/personal',
-    name: 'ProfilePersonal',
-    component: ProfilePersonal,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/profile/wallet',
-    name: 'profile-wallet',
-    component: () => import('@/views/Profile/ProfileWallet.vue'),
+    name: 'profile-personal',
+    component: () => import('@/views/Profile/ProfilePersonal.vue'),
     meta: { 
       requiresAuth: true,
-      title: '我的钱包'
+      title: '个人资料'
     }
   },
   {
@@ -125,15 +116,6 @@ const routes = [
     }
   },
   {
-    path: '/profile/settings',
-    name: 'profile-settings',
-    component: () => import('@/views/Profile/ProfileSetup.vue'),
-    meta: { 
-      requiresAuth: true,
-      title: '设置'
-    }
-  },
-  {
     path: '/profile/switch-account',
     name: 'profile-switch-account',
     component: () => import('@/views/Profile/ProfileSwitchAccount.vue'),
@@ -141,12 +123,6 @@ const routes = [
       requiresAuth: true,
       title: '切换账号'
     }
-  },
-  {
-    path: '/profile/account-management', // New route
-    name: 'AccountManagement',
-    component: AccountManagement,
-    meta: { requiresAuth: true }
   },
   // Fallback route for 404
   {
@@ -176,12 +152,12 @@ const router = createRouter({
 
 // Authentication guard
 function checkAuthentication() {
-  // 检查 localStorage 中是否有 token
+  // 检查 localStorage 中是否有 token (与 userStore 保持一致)
   return !!localStorage.getItem('token');
   // 或者，如果你使用 Pinia/Vuex:
-  // import { useAuthStore } from '@/stores/auth'; // 假设你有一个 auth store
-  // const authStore = useAuthStore();
-  // return authStore.isAuthenticated;
+  // import { useUserStore } from '@/stores/userStore';
+  // const userStore = useUserStore();
+  // return userStore.isLoggedIn;
 }
 
 router.beforeEach((to, from, next) => {

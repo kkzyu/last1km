@@ -485,11 +485,20 @@ const handleLogout = () => {
     content: '您确定要退出当前账号吗？',
     okText: '确定退出',
     cancelText: '取消',
-    centered: true,
-    onOk: () => {
+    centered: true,    onOk: () => {
+      // 清除用户数据
       userStore.clearUserProfile();
-      message.success('您已成功退出登录！');
-      router.push('/login');
+      
+      // 使用setTimeout确保localStorage完全清除后再导航
+      setTimeout(() => {
+        // 再次确认token已被清除
+        if (localStorage.getItem('token')) {
+          localStorage.removeItem('token');
+        }
+        
+        message.success('您已成功退出登录！');
+        router.push('/login');
+      }, 100); // 100ms延迟确保所有操作完成
     },
   });
 };
