@@ -12,14 +12,7 @@
             <span class="icon2"><i class="fas fa-angle-right"></i></span>
         </div>
     </div>
-    <div class="account-actions">
-        <button class="action-button switch" @click="$router.push('/profile/SwitchAccount')">
-            切换账号
-        </button>
-        <button class="action-button logout">
-            退出登录
-        </button>
-    </div>
+    <!-- Removed account actions -->
 </template>
 
 <script setup>
@@ -87,52 +80,5 @@
     cursor: pointer;
 }
 
-.account-actions {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    padding: 0 20px;
-    max-width: 450px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.action-button {
-    padding: 14px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-}
-
-.action-button:active {
-    transform: scale(0.98);
-}
-
-.switch {
-    background-color: #f5f5f5;
-    color: #333;
-}
-
-.logout {
-    background-color: #fff;
-    color: #ff4444;
-    border: 1px solid #ff4444;
-}
-
-/* For hover effects (optional) */
-@media (hover: hover) {
-    .switch:hover {
-        background-color: #eaeaea;
-    }
-    .logout:hover {
-        background-color: #ffeeee;
-    }
-}
+/* Removed styles for .account-actions, .action-button, .switch, .logout */
 </style>

@@ -21,21 +21,33 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, onMounted } from 'vue'; // Import onMounted
+import { useRouter, useRoute } from 'vue-router'; // Import useRoute
 import { authAPI } from '@/api/api';
 import { useUserStore } from '@/stores/userStore'; // 导入 userStore
 import HomeHead from '@/components/Header/HomeHead.vue'
 import BottomNav from '@/components/Bottom/BottomNav.vue'
 
 const router = useRouter();
-const route = useRoute();
-const userStore = useUserStore(); // 使用 userStore
+const route = useRoute(); // Get current route
+const userStore = useUserStore();
 
 const username = ref('');
 const password = ref('');
 const loading = ref(false);
 const error = ref('');
+
+const formState = ref({
+  username: '',
+  password: '',
+  remember: true,
+});
+
+onMounted(() => {
+  if (route.query.username) {
+    formState.value.username = route.query.username;
+  }
+});
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {

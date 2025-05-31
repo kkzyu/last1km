@@ -34,6 +34,8 @@
         <span class="icon2"><i class="fas fa-angle-right" @click="navigateTo('/profile/settings')"></i></span>
       </div>
     </div>
+
+    <!-- Removed account actions -->
   </div>
   <BottomNav />
 </template>
@@ -44,6 +46,7 @@ import ProfilePortrait from '@/components/Profile/ProfilePortrait.vue';
 import BottomNav from '@/components/Bottom/BottomNav.vue';
 import { useUserStore } from '@/stores/userStore'; // 导入 user store
 import { useRouter } from 'vue-router'; // 导入 useRouter
+// import { message } from 'ant-design-vue'; // message不再在此组件中使用
 
 // const $route = useRoute() // 如果不再直接使用 $route 可以移除，或者从 vue-router 导入 useRoute
 const router = useRouter(); // 获取 router 实例
@@ -60,6 +63,8 @@ onMounted(() => {
 const navigateTo = (path) => {
   router.push(path);
 };
+
+// Removed switchToAccount and logout methods
 
 </script>
 
@@ -131,4 +136,6 @@ const navigateTo = (path) => {
 /* .icon2:hover { // 效果现在由 .personal-info:hover 控制
   color: #5D6D7E;
 } */
+
+/* Removed styles for .account-actions, .action-button, .switch, .logout */
 </style>

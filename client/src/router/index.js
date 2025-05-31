@@ -18,6 +18,7 @@ const ProfileOrderHistory = () => import('@/views/Profile/ProfileOrderHistory.vu
 const ProfileSetup = () => import('@/views/Profile/ProfileSetup.vue')
 const ProfileSwitchAccount = () => import('@/views/Profile/ProfileSwitchAccount.vue')
 import OrderDetail from '@/views/Order/OrderDetail.vue'
+import AccountManagement from '@/views/Profile/AccountManagement.vue'; // Import the new component
 
 const routes = [
   {
@@ -101,12 +102,9 @@ const routes = [
   },
   {
     path: '/profile/personal',
-    name: 'profile-personal',
-    component: () => import('@/views/Profile/ProfilePersonal.vue'),
-    meta: { 
-      requiresAuth: true,
-      title: '个人资料'
-    }
+    name: 'ProfilePersonal',
+    component: ProfilePersonal,
+    meta: { requiresAuth: true }
   },
   {
     path: '/profile/wallet',
@@ -144,6 +142,12 @@ const routes = [
       title: '切换账号'
     }
   },
+  {
+    path: '/profile/account-management', // New route
+    name: 'AccountManagement',
+    component: AccountManagement,
+    meta: { requiresAuth: true }
+  },
   // Fallback route for 404
   {
     path: '/:pathMatch(.*)*',
@@ -172,8 +176,8 @@ const router = createRouter({
 
 // Authentication guard
 function checkAuthentication() {
-  // 示例：检查 localStorage 中是否有 authToken
-  return !!localStorage.getItem('authToken');
+  // 检查 localStorage 中是否有 token
+  return !!localStorage.getItem('token');
   // 或者，如果你使用 Pinia/Vuex:
   // import { useAuthStore } from '@/stores/auth'; // 假设你有一个 auth store
   // const authStore = useAuthStore();

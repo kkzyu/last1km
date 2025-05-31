@@ -14,7 +14,7 @@ const api = axios.create({
 // 请求拦截器 (与您提供的代码一致)
 api.interceptors.request.use(
     config => {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('token');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -35,7 +35,7 @@ api.interceptors.response.use(
             // 处理 401 错误
             if (error.response.status === 401) {
                 // 清除本地存储的认证信息
-                localStorage.removeItem('authToken');
+                localStorage.removeItem('token');
                 localStorage.removeItem('userInfo');
                 
                 // 如果不是登录页面 (基于哈希路由)，则重定向到登录
@@ -62,11 +62,16 @@ export const authAPI = {
 
 export const userAPI = {
     getProfile: () => api.get('/users/profile'),
-    updateProfile: (data) => api.put('/users/profile', data),
+    updateProfile: (profileData) => api.put('/users/profile', profileData),
+    uploadAvatar: (formData) => api.post('/users/upload_avatar', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data' // 必须为此类型
+        }
+    }),
     getAddresses: () => api.get('/users/addresses'),
-    addAddress: (data) => api.post('/users/addresses', data),
-    updateAddress: (id, data) => api.put(`/users/addresses/${id}`, data),
-    deleteAddress: (id) => api.delete(`/users/addresses/${id}`),
+    addAddress: (addressData) => api.post('/users/addresses', addressData),
+    updateAddress: (addressId, addressData) => api.put(`/users/addresses/${addressId}`, addressData),
+    deleteAddress: (addressId) => api.delete(`/users/addresses/${addressId}`),
 };
 
 export const orderAPI = {

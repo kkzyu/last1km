@@ -7,6 +7,13 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import api from './api/api' // 导入axios实例
+
+// 设置axios默认Authorization头，如果localStorage中有token
+const token = localStorage.getItem('token');
+if (token) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
 
 const app = createApp(App)
 

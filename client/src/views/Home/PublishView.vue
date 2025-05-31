@@ -70,10 +70,9 @@ const updateRequest = (index, newRequest) => {
   orderStore.requests[index] = { ...newRequest };
 };
 
-const handleSubmitOrders = async () => {
-  try {
+const handleSubmitOrders = async () => {  try {
     // 检查登录状态
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('token');
     if (!token) {
       alert('请先登录');
       router.push('/login');
