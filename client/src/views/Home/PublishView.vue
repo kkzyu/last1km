@@ -176,7 +176,9 @@ const validateRequest = (request, index) => {
   return result;
 };
 
-const handleSubmitOrders = async () => {  try {
+const handleSubmitOrders = async () => {
+  let closeLoadingMessage = null;
+  try {
     // 检查登录状态
     const token = localStorage.getItem('token');
     if (!token) {
@@ -253,49 +255,42 @@ const handleSubmitOrders = async () => {  try {
     }
 
     // 显示loading
-    const loadingMessage = message.loading('正在发布委托...', 0);
+    closeLoadingMessage = message.loading('正在发布委托...', 0);
 
-    try {
-      // 发布选中的委托
-      const results = await Promise.all(
-        selectedRequests.map(request => orderStore.publishNewOrder(request))
-      );
+    // 发布选中的委托
+    const results = await Promise.all(
+      selectedRequests.map(request => orderStore.publishNewOrder(request))
+    );
 
-      // 关闭loading
-      message.destroy(loadingMessage);
+    // 检查发布结果
+    const failedResults = results.filter(r => !r.success);
+    const successCount = results.length - failedResults.length;
 
-      // 检查发布结果
-      const failedResults = results.filter(r => !r.success);
-      const successCount = results.length - failedResults.length;
+    if (failedResults.length === 0) {
+      // 全部成功
+      if (closeLoadingMessage) closeLoadingMessage();
+      message.success(`成功发布 ${successCount} 个委托！`);
+      orderStore.requests = [];
+      router.push('/orders'); 
+      return true;
+    } else {
+      // 部分失败或全部失败
+      if (closeLoadingMessage) closeLoadingMessage();
+      const errors = failedResults.map((r, index) =>
+        `委托${index + 1}: ${r.message}`
+      ).join('\\n');
 
-      if (failedResults.length === 0) {
-        // 全部成功
-        message.success(`成功发布 ${successCount} 个委托！`);
-        orderStore.requests = [];
-        router.push('/orders'); // 跳转到订单列表
-        return true;
+      if (successCount > 0) {
+        message.warning(`${successCount} 个委托发布成功，${failedResults.length} 个失败:\\n${errors}`);
+        const successIndices = results.map((r, i) => r.success ? i : -1).filter(i => i !== -1);
+        orderStore.requests = orderStore.requests.filter((_, i) => !successIndices.includes(i));
       } else {
-        // 部分失败
-        const errors = failedResults.map((r, index) => 
-          `委托${index + 1}: ${r.message}`
-        ).join('\n');
-        
-        if (successCount > 0) {
-          message.warning(`${successCount} 个委托发布成功，${failedResults.length} 个失败:\n${errors}`);
-          // 只移除成功发布的委托
-          const successIndices = results.map((r, i) => r.success ? i : -1).filter(i => i !== -1);
-          orderStore.requests = orderStore.requests.filter((_, i) => !successIndices.includes(i));
-        } else {
-          message.error(`所有委托发布失败:\n${errors}`);
-        }
-        return false;
+        message.error(`所有委托发布失败:\\n${errors}`);
       }
-    } catch (error) {
-      message.destroy(loadingMessage);
-      throw error;
+      return false;
     }
-
   } catch (error) {
+    if (closeLoadingMessage) closeLoadingMessage();
     console.error('提交订单失败:', error);
     message.error(`提交订单失败: ${error.message || '请重试'}`);
     return false;

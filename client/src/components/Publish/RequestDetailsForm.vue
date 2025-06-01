@@ -80,12 +80,18 @@
 
     <!-- 显示预计送达时间 -->     
     <div v-if="estimatedTime" class="estimated-time">
-      <a-alert
-        :message="`🚴‍♂️ 预计${estimatedTime.mode || '骑行'}送达时间：${estimatedTime.duration}分钟 (距离：${estimatedTime.distance}km)`"
-        type="info"
-        show-icon
-        class="time-alert"
-      />
+      <a-alert type="info" class="time-alert">
+        <template #message>
+          <span class="alert-message-custom">
+            <span class="alert-icon">🛵</span>
+            <span>
+              预计{{ estimatedTime.mode || '骑行' }}送达时间：
+              <strong class="alert-value">{{ estimatedTime.duration }}分钟</strong>
+              (距离：<strong class="alert-value">{{ estimatedTime.distance }}km</strong>)
+            </span>
+          </span>
+        </template>
+      </a-alert>
     </div>
 
     <a-divider />
@@ -889,8 +895,27 @@ watch(() => props.request, (newRequest, oldRequest) => {
 }
 
 .time-alert {
-  border-radius: 6px;
-  border-left: 4px solid #1890ff;
+  border-radius: 8px;       /* Updated from 6px */
+  background-color: #e6f7ff;    /* Added, Ant Design info background */
+  padding: 12px 16px;           /* Added/Adjusted for better spacing */
+}
+
+.alert-message-custom {
+  display: flex;
+  align-items: center; /* Vertically align icon and text */
+  gap: 8px; /* Space between icon and text */
+  color: #0050b3; /* Text color for info, good contrast on light blue */
+  line-height: 1.5; /* Improve readability */
+}
+
+.alert-icon {
+  font-size: 1.3em; /* Make emoji slightly larger and more prominent */
+  line-height: 1; /* Prevent emoji from affecting overall line height too much */
+}
+
+.alert-value {
+  font-weight: 600; /* Make values like time and distance stand out */
+  color: #003a8c; /* Darker shade for emphasis */
 }
 
 .request-details-form .ant-form-item {
