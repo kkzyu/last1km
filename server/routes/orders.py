@@ -154,15 +154,17 @@ def create_order(current_user):
             # 创建订单
             order = Order(
                 user_id=current_user.id,
-                origin=request_data['origin'],
-                destination=request_data['destination'],
+                start_address=request_data['origin'],  # 修复字段映射
+                end_address=request_data['destination'],  # 修复字段映射
                 origin_detail=request_data.get('origin_detail', ''),
                 destination_detail=request_data.get('destination_detail', ''),
-                description=request_data.get('description', ''),
-                order_info=request_data.get('order_info', ''),
-                amount=amount,
-                status='pending',
-                image=request_data.get('image'),
+                item_description=request_data.get('description', ''),  # 修复字段映射
+                pickup_code=request_data.get('order_info', ''),  # 修复字段映射
+                total_amount=amount,  # 修复字段映射
+                actual_amount=amount,  # 添加必需字段
+                coupon_discount=0.0,  # 添加必需字段
+                order_status='pending',  # 修复字段映射（不是 status）
+                order_image=request_data.get('image'),  # 修复字段映射
                 origin_lat=request_data.get('origin_lat'),
                 origin_lng=request_data.get('origin_lng'),
                 dest_lat=request_data.get('dest_lat'),
