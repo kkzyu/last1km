@@ -107,4 +107,11 @@ export const orderAPI = {
     })
 };
 
+export const mapAPI = {
+    searchPlaces: (keyword, city = '杭州') => 
+        api.post('/map/search', { keyword, city }),
+    calculateRoute: (routeData) => 
+        api.post('/map/route', routeData),
+};
+
 export default api;

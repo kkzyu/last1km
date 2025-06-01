@@ -40,15 +40,22 @@
               <a-tag :color="getStatusColor(transformOrder(order).status)" class="order-status">
                 {{ getDisplayStatus(transformOrder(order).status) }}
               </a-tag>
-              <a-typography-text type="secondary" class="order-no">
-                订单号: {{ order.order_no || '无' }}
-              </a-typography-text>
-              <div> 
-                <a-typography-text class="order-route">{{ transformOrder(order).origin }} → {{ transformOrder(order).destination }} </a-typography-text>
+              <div v-if="transformOrder(order).estimatedTime" class="delivery-info">
+                <a-typography-text type="secondary" class="delivery-time">
+                  🚴‍♂️ 预计{{ transformOrder(order).estimatedTime.duration }}分钟 · {{ transformOrder(order).estimatedTime.distance }}km
+                </a-typography-text>
               </div>
+              
               <div>
                 <a-typography-text type="secondary" class="order-item-description">
                   委托物品：{{ transformOrder(order).description || '无描述' }}
+                </a-typography-text>
+              </div>
+              
+              <!-- 显示金额信息 -->
+              <div class="order-amount">
+                <a-typography-text class="amount-text">
+                  委托金额：¥{{ transformOrder(order).amount?.toFixed(2) || '0.00' }}
                 </a-typography-text>
               </div>
             </div>
@@ -58,7 +65,7 @@
                 type="primary" 
                 ghost
                 size="small"
-                @click="emit('cancel', order.id)"
+                @click.stop="emit('cancel', order.id)"
               >
                 取消
               </a-button>
@@ -66,7 +73,7 @@
                 v-else-if="transformOrder(order).status === 'completed'"
                 type="primary"
                 size="small"
-                @click="emit('review', order.id)"
+                @click.stop="emit('review', order.id)"
               >
                 评价
               </a-button>
@@ -76,7 +83,7 @@
                 danger
                 ghost
                 size="small"
-                @click="emit('delete', order.id)"
+                @click.stop="emit('delete', order.id)"
               >
                 删除
               </a-button>
@@ -84,10 +91,11 @@
           </a-card>
         </div>
       </template>
-      <div v-if="!Object.keys(groupedOrders).length && !orderStore.isLoading" class="empty-state">
+      <div v-if="!hasOrders && !orderStore.loading" class="empty-state">
         <a-empty description="暂无符合条件的订单" />
       </div>
-       <div v-if="orderStore.isLoading" class="loading-state" style="text-align: center; padding: 20px;">
+      
+      <div v-if="orderStore.loading" class="loading-state" style="text-align: center; padding: 20px;">
         <a-spin size="large" />
       </div>
     </div>
@@ -101,42 +109,79 @@ import { useOrderStore } from '@/stores/orderStore';
 import { PictureOutlined } from '@ant-design/icons-vue';
 
 const orderStore = useOrderStore();
-const router = useRouter();  // 已经在这里声明过了
+const router = useRouter();
 const groupedOrders = computed(() => orderStore.groupedOrders);
 const imageFailedStates = ref({});
 
 const emit = defineEmits(['publish', 'cancel', 'review', 'delete']);
 
-// 定义API基础URL，用于拼接图片路径 (与RequestDetailsForm.vue中保持一致)
 const API_BASE_URL = 'http://localhost:5000'; 
 
-onMounted(() => {
-  orderStore.loadOrders();
+const safeGroupedOrders = computed(() => {
+  const orders = orderStore.groupedOrders;
+  return orders && typeof orders === 'object' ? orders : {};
 });
 
-const getImageUrl = (imageFilename) => { // 参数名改为 imageFilename 更清晰
+const hasOrders = computed(() => {
+  const orders = safeGroupedOrders.value;
+  return orders && Object.keys(orders).length > 0;
+});
+
+
+onMounted(async () => {
+  // 修改为使用正确的方法名
+  try {
+    if (typeof orderStore.fetchOrders === 'function') {
+      await orderStore.fetchOrders();
+    } else if (typeof orderStore.loadOrders === 'function') {
+      await orderStore.loadOrders();
+    } else {
+      console.warn('orderStore 中没有找到加载订单的方法');
+    }
+  } catch (error) {
+    console.error('加载订单失败:', error);
+  }
+});
+
+
+const getImageUrl = (imageFilename) => {
   if (!imageFilename) return '';
-  // 假设 imageFilename 是后端存储的文件名，例如 "your-uuid.png"
   return `${API_BASE_URL}/static/uploads/${imageFilename}`; 
 }
 
 const transformOrder = (order) => {
+  // 解析预计配送时间
+  let estimatedTime = null;
+  if (order.estimated_duration && order.estimated_distance) {
+    estimatedTime = {
+      duration: order.estimated_duration,
+      distance: order.estimated_distance,
+      mode: '骑行'
+    };
+  }
+
   return {
     ...order,
-    origin: order.start_address,
-    destination: order.end_address,
-    image: order.order_image, // order.order_image 应该存储的是文件名
-    amount: order.actual_amount,
-    status: order.order_status,
-    description: order.item_description
+    origin: order.origin || order.start_address || '未知起点',
+    destination: order.destination || order.end_address || '未知终点',
+    originDetail: order.origin_detail || '',
+    destinationDetail: order.destination_detail || '',
+    image: order.order_image,
+    amount: order.actual_amount || order.amount || order.total_amount,
+    status: order.order_status || order.status,
+    description: order.item_description || order.description,
+    estimatedTime
   }
 }
 
 const getDisplayStatus = (status) => {
   switch(status) {
     case 'pending': return '进行中';
+    case 'accepted': return '已接单';
+    case 'delivering': return '配送中';
     case 'completed': return '已完成';
     case 'cancelled': return '已取消';
+    case 'reviewed': return '已评价';
     default: return status ? status.charAt(0).toUpperCase() + status.slice(1) : '未知';
   }
 }
@@ -144,8 +189,11 @@ const getDisplayStatus = (status) => {
 const getStatusColor = (status) => {
   switch(status) {
     case 'pending': return 'processing';
+    case 'accepted': return 'blue';
+    case 'delivering': return 'orange';
     case 'completed': return 'success';
     case 'cancelled': return 'error';
+    case 'reviewed': return 'purple';
     default: return 'default';
   }
 }
@@ -154,9 +202,6 @@ const handleImageError = (orderId) => {
   imageFailedStates.value[orderId] = true;
 }
 
-// 删除下面重复的 router 声明
-// const router = useRouter();
-
 const handleOrderClick = (orderId) => {
   router.push(`/orders/${orderId}`);
 };
@@ -164,50 +209,68 @@ const handleOrderClick = (orderId) => {
 
 <style scoped>
 .history-orders {
-  padding: 15px;
-  flex: 1;
-  height: 0;
-  padding-bottom: 55px;
-  background-color: #f5f5f7; /* 外层容器设置为浅灰色 */
-}
-
-.order-list {
-  background-color: #f5f5f7; 
-  border-radius: 8px; /* 添加圆角 */
-  padding: 10px; /* 添加内边距 */
+  padding: 16px;
+  background-color: var(--color-bg-container);
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .publish-button {
   border-radius: 20px;
-  font-size: 1em;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.order-list .order-item { /* 这是 a-card 的样式 */
-  margin-bottom: 15px;
-  border-radius: 10px;
-  overflow: hidden; /* 有助于内部圆角和阴影的显示 */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  /* a-card 的 :bodyStyle 已经设置了 display:flex, gap, alignItems */
+.order-list {
+  background-color: var(--color-bg-container);
+  border-radius: 8px;
 }
 
-.order-list .order-item:last-child {
-  margin-bottom: 25px;
+.date-group {
+  margin-bottom: 24px;
+}
+
+.date-header {
+  padding: 12px 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  background-color: var(--color-bg-container);
+  z-index: 1;
+}
+
+.order-item {
+  margin-bottom: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--box-shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-border-secondary);
+}
+
+.order-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--box-shadow);
+  border-color: var(--color-primary);
 }
 
 .order-image {
-  width: 80px; /* 根据需要调整图片宽度 */
-  height: 80px; /* 根据需要调整图片高度 */
-  border-radius: 8px;
+  width: 80px;
+  height:150px;
+  border-radius: 6px;
   overflow: hidden;
-  flex-shrink: 0; /* 防止图片在flex布局中被压缩 */
-  background: #f0f0f0; /* 图片加载前的占位背景色 */
+  flex-shrink: 0;
+  background: var(--color-fill-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,98 +279,131 @@ const handleOrderClick = (orderId) => {
 .order-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* 保持图片比例并填充容器 */
+  object-fit: cover;
 }
 
 .image-placeholder {
-  color: #999;
-  font-size: 2em; /* 调整占位图标大小 */
+  color: var(--color-text-placeholder);
+  font-size: 24px;
 }
 
 .order-details {
-  flex-grow: 1;   /* 占据剩余空间 */
-  flex-shrink: 1; /* 允许收缩 */
-  min-width: 0;     /* **非常重要**：允许flex项收缩到其内容大小以下，以便max-width和省略号生效 */
-  max-width: 200px; /* 您要求的最大宽度，可以调整这个值，例如 '50%' 或其他像素值 */
-  overflow: hidden; /* 隐藏超出最大宽度的内容，配合文本省略 */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* 垂直方向上内容居中（如果需要） */
+  gap: 8px;
 }
 
 .order-status {
-  margin-bottom: 4px;
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.5px;
-  display: inline-block; /* 或者 flex-start 如果想让它不占满整行 */
-  align-self: flex-start; /* 确保标签靠左 */
+  align-self: flex-start;
+  margin: 0;
 }
 
 .order-no {
-  display: block;
-  font-size: 12px; /* 保持与状态标签字体大小一致或略小 */
-  color: #999;
-  white-space: nowrap; /* 确保订单号本身如果过长也会省略 */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%; /* 相对于.order-details的宽度 */
-  /* margin-bottom: 6px; /* 从order-details内部的文本中移除，因为外部有gap */
+  font-size: 12px;
+  color: var(--color-text-tertiary);
 }
 
-/* 针对订单详情中的文本行应用省略号 */
-.order-details .order-route,
-.order-details .order-item-description {
-  display: block; 
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%; 
-  font-size: 14px;
-  line-height: 1.5;
-}
-.order-details .order-route {
- color: #333; /* 主要文本颜色 */
- margin: 2px 0; /* 调整间距 */
+.route-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0;
 }
 
-.order-details .order-item-description {
-  color: #555; 
-  font-size: 13px; 
-  margin-top: 2px; /* 调整间距 */
+.route-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 
+.point-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
 
-.date-header {
-  padding: 10px 0;
-  color: #666;
-  font-size: 14px;
+.point-icon.start {
+  background-color: var(--color-success);
+}
+
+.point-icon.end {
+  background-color: var(--color-primary);
+}
+
+.main-address {
+  color: var(--color-text);
+  font-size: 13px;
   font-weight: 500;
 }
 
-.order-actions {
+.detail-address {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.delivery-info {
   display: flex;
-  flex-direction: column;
-  justify-content: center; 
-  align-items: center; 
-  gap: 8px;
-  flex-shrink: 0; 
-  padding-left: 10px; 
-  width: 70px; 
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-primary);
 }
 
-.order-actions .ant-btn {
-  width: 100%;
-  text-align: center;
+.order-item-description {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.date-group {
-  margin-bottom: 20px;
+.order-amount {
+  margin-top: auto;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-error);
 }
 
-.empty-state, .loading-state {
+.order-actions {
+  /* align-self: center; */
+}
+
+.empty-state, 
+.loading-state {
   padding: 40px 0;
   text-align: center;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .order-item {
+    flex-direction: column;
+  }
+  
+  .order-image {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 12px;
+  }
+  
+  .order-actions {
+    align-self: flex-end;
+    margin-top: 12px;
+  }
 }
 </style>

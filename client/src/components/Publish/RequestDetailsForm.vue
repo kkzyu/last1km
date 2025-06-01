@@ -18,16 +18,32 @@
               <span>起点信息</span>
             </div>
           </template>
-          <a-textarea
+          <AddressSearch
             v-model:value="computedOrigin"
-            placeholder="选择添加起点，填写详细信息 (如蓝田北门外卖柜)"
-            :rows="3"
-            class="form-textarea"
+            placeholder="搜索起点地址 (如蓝田北门外卖柜)"
+            type="origin"
+            @address-selected="handleOriginSelected"
+            @clear="handleOriginClear"
+          />
+        </a-form-item>
+      </a-col>
+    </a-row>
+    <a-row :gutter="16">
+      <a-col :span="24">
+        <a-form-item>
+          <template #label>
+            <span style="color: #8c8c8c; font-size: 14px;">具体位置</span>
+          </template>
+          <a-input
+            v-model:value="computedOriginDetail"
+            placeholder="请输入具体位置信息 (如：1号外卖柜49号柜口)"
+            style="margin-top: -8px;"
           />
         </a-form-item>
       </a-col>
     </a-row>
 
+    
     <a-row :gutter="16">
       <a-col :span="24">
         <a-form-item>
@@ -37,18 +53,44 @@
               <span>终点信息</span>
             </div>
           </template>
-          <a-textarea
+          <AddressSearch
             v-model:value="computedDestination"
-            placeholder="选择添加终点，填写详细信息 (如青溪一舍大厅)"
-            :rows="3"
-            class="form-textarea"
+            placeholder="搜索终点地址 (如青溪一舍大厅)"
+            type="destination"
+            @address-selected="handleDestinationSelected"
+            @clear="handleDestinationClear"
+          />
+        </a-form-item>
+      </a-col>
+    </a-row>
+    <a-row :gutter="16">
+      <a-col :span="24">
+        <a-form-item>
+          <template #label>
+            <span style="color: #8c8c8c; font-size: 14px;">具体位置</span>
+          </template>
+          <a-input
+            v-model:value="computedDestinationDetail"
+            placeholder="请输入具体位置信息 (如：宿舍门牌号、楼层房间号等)"
+            style="margin-top: -8px;"
           />
         </a-form-item>
       </a-col>
     </a-row>
 
+    <!-- 显示预计送达时间 -->     
+    <div v-if="estimatedTime" class="estimated-time">
+      <a-alert
+        :message="`🚴‍♂️ 预计${estimatedTime.mode || '骑行'}送达时间：${estimatedTime.duration}分钟 (距离：${estimatedTime.distance}km)`"
+        type="info"
+        show-icon
+        class="time-alert"
+      />
+    </div>
+
     <a-divider />
 
+    
     <a-form-item label="订单截图">
       <a-upload
         v-model:file-list="fileList"
@@ -115,7 +157,7 @@
       </template>
       <a-textarea 
         v-model:value="computedDescription" 
-        placeholder="例如：山离家砂锅鲜烧饺 - 卤烧鸡翅尖·砂锅鲜烧饺单人份" 
+        placeholder="上传订单截图AI自动识别" 
         :rows="2" 
       />
     </a-form-item>
@@ -129,7 +171,7 @@
       </template>
       <a-textarea 
         v-model:value="computedOrderInfo" 
-        placeholder="例如：蓝田(东门)蓝田外卖柜 alanni ****1847" 
+        placeholder="上传订单截图AI自动识别" 
         :rows="3" 
       />
     </a-form-item>
@@ -155,6 +197,8 @@ import { ref, computed, watch } from 'vue';
 import { PlusOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { orderAPI } from '@/api/api';
+import AddressSearch from '@/components/UI/AddressSearch.vue';
+import { mapAPI } from '@/api/api';
 
 const props = defineProps({
   index: { type: Number, required: true },
@@ -164,11 +208,17 @@ const props = defineProps({
     default: () => ({
         origin: '',
         destination: '',
+        originDetail: '',           // 起点具体地址
+        destinationDetail: '',      // 终点具体地址
         description: '',
         orderInfo: '',
         amount: 0,
         selected: true,
-        image: null
+        image: null,
+        originLocation: null,       // 起点坐标 {lat, lng}
+        destinationLocation: null,  // 终点坐标 {lat, lng}
+        estimatedTime: null,        // 预计送达时间 {duration, distance, mode}
+        createdAt: null
     })
   }
 });
@@ -176,25 +226,77 @@ const props = defineProps({
 const emit = defineEmits(['update:request']);
 
 const emitUpdateRequest = (updatedFields) => {
-  emit('update:request', { ...props.request, ...updatedFields });
+  console.log(`RequestDetailsForm - 准备更新字段:`, updatedFields);
+  
+  // 直接传递完整的请求对象
+  const newRequest = { ...props.request, ...updatedFields };
+  console.log(`RequestDetailsForm - 完整的新请求对象:`, newRequest);
+  
+  emit('update:request', newRequest);
 };
+
+const computedOriginDetail = computed({
+  get: () => props.request.originDetail || '',
+  set: (value) => emitUpdateRequest({ originDetail: value })
+});
+
+const computedDestinationDetail = computed({
+  get: () => props.request.destinationDetail || '',
+  set: (value) => emitUpdateRequest({ destinationDetail: value })
+});
 
 // Computed properties for v-model two-way binding
 const computedOrigin = computed({
-  get: () => props.request.origin,
-  set: (value) => emitUpdateRequest({ origin: value })
+  get: () => {
+    const value = props.request.origin || '';
+    console.log('computedOrigin get:', value);
+    return value;
+  },
+  set: (value) => {
+    console.log('computedOrigin set:', value);
+    emitUpdateRequest({ origin: value });
+  }
 });
 const computedDestination = computed({
-  get: () => props.request.destination,
-  set: (value) => emitUpdateRequest({ destination: value })
+  get: () => {
+    const value = props.request.destination || '';
+    console.log('computedDestination get:', value);
+    return value;
+  },
+  set: (value) => {
+    console.log('computedDestination set:', value);
+    emitUpdateRequest({ destination: value });
+  }
 });
 const computedDescription = computed({
-  get: () => props.request.description,
-  set: (value) => emitUpdateRequest({ description: value })
+  get: () => {
+    const desc = props.request.description;
+    // 确保总是返回字符串
+    if (Array.isArray(desc)) {
+      return desc.join(' ');
+    }
+    return desc || '';
+  },
+  set: (value) => {
+    // 确保总是设置为字符串
+    const stringValue = Array.isArray(value) ? value.join(' ') : (value || '');
+    emitUpdateRequest({ description: stringValue });
+  }
 });
 const computedOrderInfo = computed({
-  get: () => props.request.orderInfo,
-  set: (value) => emitUpdateRequest({ orderInfo: value })
+  get: () => {
+    const info = props.request.orderInfo;
+    // 确保总是返回字符串
+    if (Array.isArray(info)) {
+      return info.join(' ');
+    }
+    return info || '';
+  },
+  set: (value) => {
+    // 确保总是设置为字符串
+    const stringValue = Array.isArray(value) ? value.join(' ') : (value || '');
+    emitUpdateRequest({ orderInfo: stringValue });
+  }
 });
 const computedTaskAmount = computed({
   get: () => props.request.amount,
@@ -216,6 +318,10 @@ const recognizedText = ref(''); // 存储原始识别文本
 const showRawText = ref(false); // 控制是否显示原始文本
 const showDebugInfo = ref(process.env.NODE_ENV === 'development'); // 只在开发环境显示调试信息
 
+const originLocation = computed(() => props.request.originLocation);
+const destinationLocation = computed(() => props.request.destinationLocation);
+const estimatedTime = computed(() => props.request.estimatedTime);
+
 const API_BASE_URL = 'http://localhost:5000';
 
 // 监听 props.request.image
@@ -231,6 +337,8 @@ watch(() => props.request.image, (newImageFilename) => {
     fileList.value = [];
   }
 }, { immediate: true });
+
+
 
 const getBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -372,11 +480,11 @@ const analyzeOrderImage = async (filename) => {
       const updates = {};
       
       if (description && !props.request.description) {
-        updates.description = description;
-      }
+        updates.description = Array.isArray(description) ? description.join(' ') : String(description);
+      };
       if (orderInfo && !props.request.orderInfo) {
-        updates.orderInfo = orderInfo;
-      }
+        updates.orderInfo = Array.isArray(orderInfo) ? orderInfo.join(' ') : String(orderInfo);
+      };
       
       if (Object.keys(updates).length > 0) {
         emitUpdateRequest(updates);
@@ -511,6 +619,161 @@ const handlePreview = async (file) => {
   previewVisible.value = true;
   previewTitle.value = file.name || (file.url ? file.url.substring(file.url.lastIndexOf('/') + 1) : '图片预览');
 };
+
+const handleOriginSelected = (addressInfo) => {
+  console.log('起点地址选择事件:', addressInfo);
+  
+  if (addressInfo && addressInfo.name) {
+    const updateData = { 
+      origin: addressInfo.name,  // 确保这里是地址名称
+      originLocation: addressInfo.location 
+    };
+    console.log('起点更新数据:', updateData);
+    emitUpdateRequest(updateData);
+    
+    // 延迟计算路线，确保数据已更新
+    setTimeout(() => {
+      if (props.request.destinationLocation) {
+        calculateRoute();
+      }
+    }, 100);
+  } else {
+    console.log('清空起点地址');
+    emitUpdateRequest({ 
+      origin: '',
+      originLocation: null,
+      estimatedTime: null
+    });
+  }
+};
+
+const handleDestinationSelected = (addressInfo) => {
+  console.log('终点地址选择事件:', addressInfo);
+  
+  if (addressInfo && addressInfo.name) {
+    const updateData = { 
+      destination: addressInfo.name,  // 确保这里是地址名称
+      destinationLocation: addressInfo.location 
+    };
+    console.log('终点更新数据:', updateData);
+    emitUpdateRequest(updateData);
+    
+    setTimeout(() => {
+      if (props.request.originLocation) {
+        calculateRoute();
+      }
+    }, 100);
+  } else {
+    console.log('清空终点地址');
+    emitUpdateRequest({ 
+      destination: '',
+      destinationLocation: null,
+      estimatedTime: null
+    });
+  }
+};
+
+const handleOriginClear = () => {
+  console.log('清空起点地址');
+  emitUpdateRequest({ 
+    origin: '',
+    originLocation: null,
+    estimatedTime: null
+  });
+};
+
+const handleDestinationClear = () => {
+  console.log('清空终点地址');
+  emitUpdateRequest({ 
+    destination: '',
+    destinationLocation: null,
+    estimatedTime: null
+  });
+};
+
+// 修复路线计算函数
+const calculateRoute = async () => {
+  // 直接使用 props 中的位置信息
+  const origin = props.request.originLocation;
+  const destination = props.request.destinationLocation;
+  
+  console.log('计算路线 - 检查位置信息:', {
+    origin,
+    destination,
+    hasOrigin: !!origin,
+    hasDestination: !!destination
+  });
+  
+  if (!origin || !destination) {
+    console.log('缺少起点或终点坐标，跳过路线计算');
+    return;
+  }
+  try {
+    console.log('开始计算路线...', {
+      origin,
+      destination
+    });
+    
+    const response = await mapAPI.calculateRoute({
+      origin,
+      destination
+    });
+    
+    if (response.data && response.data.success) {
+      console.log('路线计算成功:', response.data.data);
+      emitUpdateRequest({ 
+        estimatedTime: response.data.data 
+      });
+      message.success(`路线规划成功！预计骑行${response.data.data.duration}分钟`);
+    } else {
+      console.error('路线计算失败:', response.data?.message);
+      message.warning('路线规划失败：' + (response.data?.message || '未知错误'));
+    }
+  } catch (error) {
+    console.error('路线计算异常:', error);
+    message.error('路线规划失败，请检查网络连接');
+  }
+};
+watch(
+  () => [props.request.originLocation, props.request.destinationLocation],
+  ([newOrigin, newDestination], [oldOrigin, oldDestination]) => {
+    console.log('位置信息变化:', {
+      newOrigin,
+      newDestination,
+      oldOrigin,
+      oldDestination
+    });
+    
+    // 只有当两个位置都存在且发生了变化时才计算路线
+    if (newOrigin && newDestination) {
+      // 检查是否真的发生了变化
+      const originChanged = JSON.stringify(newOrigin) !== JSON.stringify(oldOrigin);
+      const destinationChanged = JSON.stringify(newDestination) !== JSON.stringify(oldDestination);
+      
+      if (originChanged || destinationChanged) {
+        console.log('位置发生变化，开始计算路线');
+        setTimeout(() => calculateRoute(), 100);
+      }
+    } else if (!newOrigin || !newDestination) {
+      // 如果任一位置被清空，清除路线信息
+      if (props.request.estimatedTime) {
+        emitUpdateRequest({ estimatedTime: null });
+      }
+    }
+  },
+  { deep: true }
+);
+
+watch(() => props.request, (newRequest, oldRequest) => {
+  console.log(`委托 ${props.index + 1} props变化:`, {
+    origin: newRequest.origin,
+    destination: newRequest.destination,
+    originLocation: newRequest.originLocation,
+    destinationLocation: newRequest.destinationLocation,
+    estimatedTime: newRequest.estimatedTime
+  });
+}, { deep: true });
+
 </script>
 
 <style scoped>
@@ -538,18 +801,7 @@ const handlePreview = async (file) => {
   align-items: center;
   gap: 8px;
 }
-.point-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
-  color: white;
-  flex-shrink: 0;
-}
+
 .ai-controls {
   margin-top: 8px;
   display: flex;
@@ -610,4 +862,60 @@ const handlePreview = async (file) => {
   width: 100px;
   height: 100px;
 }
+
+.point-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  flex-shrink: 0;
+}
+
+.origin-icon {
+  background-color: #52c41a;
+}
+
+.destination-icon {
+  background-color: #ff4d4f;
+}
+
+.estimated-time {
+  margin: 16px 0;
+}
+
+.time-alert {
+  border-radius: 6px;
+  border-left: 4px solid #1890ff;
+}
+
+.request-details-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.request-details-form .ant-input {
+  border-radius: 6px;
+}
+
+/* 具体地址输入框的特殊样式 */
+.request-details-form .ant-form-item:has(span:contains("具体位置")) {
+  margin-top: -8px;
+  margin-bottom: 20px;
+}
+
+.request-details-form .ant-form-item:has(span:contains("具体位置")) .ant-input {
+  border: 1px dashed #d9d9d9;
+  background-color: #fafafa;
+  font-size: 13px;
+}
+
+.request-details-form .ant-form-item:has(span:contains("具体位置")) .ant-input:focus {
+  border-color: #1890ff;
+  background-color: #fff;
+}
+
 </style>
