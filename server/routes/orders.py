@@ -14,7 +14,11 @@ import uuid
 import traceback
 from werkzeug.utils import secure_filename
 
+
+from services.ai_service import ai_service
+
 orders_bp = Blueprint('orders', __name__)
+
 
 # --- 图片上传路由 (保持您提供的版本) ---
 @orders_bp.route('/upload_image', methods=['POST', 'OPTIONS'])
@@ -78,43 +82,113 @@ def upload_order_image(current_user):
         current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         return error_response(f"图片上传过程中发生错误: {str(e)}", 500)
 
+@orders_bp.route('/analyze-image', methods=['POST'])
+@token_required
+def analyze_order_image(current_user):
+    """分析订单图片，提取商品描述和取件信息"""
+    try:
+        data = request.get_json()
+        filename = data.get('filename')
+        
+        if not filename:
+            return success_response({}, "请提供图片文件名", success=False)
+        
+        # 构建图片完整路径
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'server/static/uploads'))
+        image_path = os.path.join(upload_folder, filename)
+        
+        # 检查文件是否存在
+        if not os.path.exists(image_path):
+            return success_response({}, "图片文件不存在", success=False)
+        
+        # 执行OCR识别
+        recognized_text = ai_service.recognize_text(image_path)
+        
+        # 解析订单信息
+        parsed_info = ai_service.parse_order_info(recognized_text)
+        
+        return success_response({
+            'recognizedText': recognized_text,  # 原始识别文本，可用于调试
+            'description': parsed_info['description'],
+            'orderInfo': parsed_info['orderInfo']
+        })
+        
+    except Exception as error:
+        current_app.logger.error(f'AI分析错误: {str(error)}')
+        # 返回正确的错误响应，避免401状态码
+        return error_response(f'AI分析失败: {str(error)}', 500)
+    
 # --- 创建订单 (保持您提供的版本，确保 Order 模型字段正确) ---
 @orders_bp.route('/', methods=['POST', 'OPTIONS']) # 添加 OPTIONS
 @token_required
 def create_order(current_user):
-    """创建订单"""
     try:
         data = request.get_json()
-        start_address = data.get('start_address')
-        end_address = data.get('end_address')
-        item_description = data.get('item_description')
-        total_amount = data.get('total_amount')
-        order_image_filename = data.get('order_image')
-
-        if not all([start_address, end_address, total_amount is not None]):
-            return error_response("订单信息不完整")
         
-        # 确保您的 Order 模型定义是干净的，并且 order_image 字段存在
-        order = Order(
-            user_id=current_user.id,
-            start_address=start_address,
-            end_address=end_address,
-            item_description=item_description,
-            total_amount=float(total_amount),
-            actual_amount=float(total_amount), # 通常 actual_amount 需要计算优惠等
-            order_status='pending', # 假设内部使用 'pending'
-            order_image=order_image_filename 
-        )
+        if not data:
+            return error_response("请求数据不能为空")
         
-        db.session.add(order)
+        # 处理单个订单或订单列表
+        requests_data = data if isinstance(data, list) else [data]
+        
+        if not requests_data:
+            return error_response("订单数据不能为空")
+        
+        created_orders = []
+        
+        for request_data in requests_data:
+            # 验证必填字段
+            required_fields = ['origin', 'destination', 'amount']
+            for field in required_fields:
+                if not request_data.get(field):
+                    return error_response(f"缺少必填字段: {field}")
+            
+            # 验证金额
+            try:
+                amount = float(request_data['amount'])
+                if amount <= 0:
+                    return error_response("委托金额必须大于0")
+            except (ValueError, TypeError):
+                return error_response("委托金额格式错误")
+            
+            # 创建订单
+            order = Order(
+                user_id=current_user.id,
+                start_address=request_data['origin'],  # 修复字段映射
+                end_address=request_data['destination'],  # 修复字段映射
+                origin_detail=request_data.get('origin_detail', ''),
+                destination_detail=request_data.get('destination_detail', ''),
+                item_description=request_data.get('description', ''),  # 修复字段映射
+                pickup_code=request_data.get('order_info', ''),  # 修复字段映射
+                total_amount=amount,  # 修复字段映射
+                actual_amount=amount,  # 添加必需字段
+                coupon_discount=0.0,  # 添加必需字段
+                order_status='pending',  # 修复字段映射（不是 status）
+                order_image=request_data.get('image'),  # 修复字段映射
+                origin_lat=request_data.get('origin_lat'),
+                origin_lng=request_data.get('origin_lng'),
+                dest_lat=request_data.get('dest_lat'),
+                dest_lng=request_data.get('dest_lng'),
+                estimated_duration=request_data.get('estimated_duration'),
+                estimated_distance=request_data.get('estimated_distance')
+            )
+            
+            db.session.add(order)
+            db.session.flush()  # 获取订单ID
+            
+            created_orders.append(order.to_dict())
+        
         db.session.commit()
         
-        return success_response(order.to_dict(), "订单创建成功")
+        return success_response({
+            'orders': created_orders,
+            'count': len(created_orders)
+        })
         
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"订单创建失败: {str(e)}")
-        return error_response(f"订单创建失败: {str(e)}")
+        current_app.logger.error(f"创建订单失败: {str(e)}")
+        return error_response(f"创建订单失败: {str(e)}")
 
 # --- 获取订单列表 (保持您提供的版本) ---
 @orders_bp.route('/', methods=['GET', 'OPTIONS']) # 添加 OPTIONS
@@ -278,3 +352,6 @@ def complete_order(current_user, order_id):
         db.session.rollback()
         current_app.logger.error(f"完成订单失败: {str(e)}")
         return error_response(f"完成订单失败: {str(e)}")
+    
+
+

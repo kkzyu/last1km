@@ -74,8 +74,8 @@ const navigateTo = (path) => {
   flex-direction: column; /* New */
   background-color: #f8f9fa; /* 淡灰色背景 */
   padding: 20px;
-  padding-bottom: 20px; /* Adjusted from 100px */
-  min-height: 100vh; /* 确保页面至少撑满整个视窗高度 */
+  padding-bottom: 80px; /* 为 BottomNav 留出空间 */
+  min-height: calc(900px - 80px); /* 考虑 BottomNav 的高度 */
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; /* 圆润的无衬线字体 */
 }

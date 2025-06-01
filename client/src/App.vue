@@ -23,7 +23,7 @@ onMounted(() => {
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 900px;
+  max-height: 900px;
   max-width: 390px;
   margin: 0 auto;
   /* margin-bottom:20px; */

@@ -18,15 +18,45 @@
             <div v-if="order.completed_at" class="order-time">完成时间: {{ formatDate(order.completed_at) }}</div>
           </div>
 
-          <div class="order-route">
-            <div class="route-point start">
-              <div class="point-icon">起</div>
-              <div class="point-detail">{{ order.start_address }}</div>
+          <!-- 更新路线信息显示 -->
+        <div class="order-route">
+          <div class="route-point start">
+            <div class="point-icon">起</div>
+            <div class="point-detail">
+              <div class="main-address">{{ order.start_address }}</div>
+              <div v-if="order.origin_detail" class="detail-address">
+                具体位置：{{ order.origin_detail }}
+              </div>
             </div>
-            <div class="route-line"></div>
-            <div class="route-point end">
-              <div class="point-icon">终</div>
-              <div class="point-detail">{{ order.end_address }}</div>
+          </div>
+          <div class="route-line"></div>
+          <div class="route-point end">
+            <div class="point-icon">终</div>
+            <div class="point-detail">
+              <div class="main-address">{{ order.end_address }}</div>
+              <div v-if="order.destination_detail" class="detail-address">
+                具体位置：{{ order.destination_detail }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+          <!-- 显示预计配送信息 -->
+          <div v-if="order.estimated_duration || order.estimated_distance" class="delivery-estimate">
+            <h3 class="section-title">配送预估</h3>
+            <div class="estimate-info">
+              <div v-if="order.estimated_duration" class="estimate-item">
+                <span class="label">预计时长:</span>
+                <span class="value">{{ order.estimated_duration }} 分钟</span>
+              </div>
+              <div v-if="order.estimated_distance" class="estimate-item">
+                <span class="label">预计距离:</span>
+                <span class="value">{{ order.estimated_distance }} 公里</span>
+              </div>
+              <div class="estimate-item">
+                <span class="label">配送方式:</span>
+                <span class="value">🚴‍♂️ 骑行</span>
+              </div>
             </div>
           </div>
 
@@ -53,10 +83,7 @@
               <span class="label">取件信息:</span>
               <span class="value">{{ order.pickup_code }}</span>
             </div>
-            <div class="info-item" v-if="order.locker_number">
-              <span class="label">储物柜号:</span>
-              <span class="value">{{ order.locker_number }}</span>
-            </div>
+            
           </div>
 
           <a-divider />
@@ -65,7 +92,7 @@
             <h3 class="section-title">金额明细</h3>
             <div class="amount-item">
               <span>订单金额:</span>
-              <span class="amount">¥{{ order.total_amount != null ? order.total_amount.toFixed(2) : '0.00' }}</span>
+              <span class="amount">¥{{ (order.total_amount || order.amount || 0).toFixed(2) }}</span>
             </div>
             <div class="amount-item" v-if="order.coupon_discount != null && order.coupon_discount > 0">
               <span>优惠券减免:</span>
@@ -73,7 +100,7 @@
             </div>
             <div class="amount-item total">
               <span>实付金额:</span>
-              <span class="total-amount">¥{{ order.actual_amount != null ? order.actual_amount.toFixed(2) : '0.00' }}</span>
+              <span class="total-amount">¥{{ (order.actual_amount || order.amount || 0).toFixed(2) }}</span>
             </div>
           </div>
         </a-card>
@@ -136,13 +163,13 @@
   </div>
 </template>
 
-<script setup> // <--- 所有逻辑都应在此处或通过导入模块的方式
-import { ref, onMounted } from 'vue'; // computed 未使用，已移除
+<script setup>
+import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { orderAPI } from '@/api/api';
 import { message, Image as AImage, Rate as ARate, Avatar as AAvatar, Spin as ASpin } from 'ant-design-vue';
 import { UserOutlined } from '@ant-design/icons-vue';
-import OrderDetailHeader from '@/components/Header/OrderDetailHeader.vue'; // 确保这个组件已创建并正确导入
+import OrderDetailHeader from '@/components/Header/OrderDetailHeader.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -228,6 +255,7 @@ const fetchOrderDetail = async () => {
   }
 };
 
+// 其他现有的处理函数保持不变...
 const handleCancelOrder = async () => {
   if (!order.value || !order.value.id) return;
   try {
@@ -297,7 +325,7 @@ const handleCompleteOrder = async () => {
     const response = await orderAPI.completeOrder(order.value.id);
     if (response.data && response.data.success) {
       message.success('订单已完成');
-      fetchOrderDetail(); // 重新加载订单详情
+      fetchOrderDetail();
     } else {
       message.error(response.data.message || '完成订单操作未成功');
     }
@@ -315,213 +343,337 @@ onMounted(() => {
 });
 </script>
 <style scoped>
-/* 您的CSS样式保持不变 */
 .order-detail-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* 改为视口高度，确保内容区可滚动 */
-  background-color: #f5f5f7; 
+  max-height: 900px;
+  background-color: var(--color-bg-layout);
 }
 
-.scrollable-content { /* 新增包裹层用于滚动 */
+.scrollable-content {
   flex: 1;
   overflow-y: auto;
-  /* padding-bottom: 50px; 为可能的底部操作栏预留空间（如果OrderDetailHeader不是fixed） */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  padding: 16px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-.scrollable-content::-webkit-scrollbar { /* Chrome, Safari and Opera */
+
+.scrollable-content::-webkit-scrollbar {
   display: none;
 }
 
-
-.order-header { /* 如果头部是fixed或sticky，需要调整scrollable-content的padding-top */
-  background-color: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  /* position: sticky; top: 0; z-index: 10; 如果希望头部吸顶 */
-}
 .loading-spinner {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px; 
-  padding-top: 50px; /* 确保在头部下方可见 */
+  height: 200px;
 }
 
-.order-content {
-  padding: 16px;
-  /* min-height: calc(100vh - 150px); */ /* 如果头部和底部有固定高度，可以这样计算 */
-}
-
-.order-card, .deliverer-card, .section-card {
+/* 卡片基础样式 */
+.order-card,
+.deliverer-card {
   margin-bottom: 16px;
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-sm);
+  border: 1px solid var(--color-border-secondary);
+  transition: all 0.2s ease;
 }
 
+.order-card:hover {
+  box-shadow: var(--box-shadow);
+  border-color: var(--color-primary);
+}
+
+/* 订单元信息 */
 .order-meta {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .status-tag {
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 500;
   padding: 4px 10px;
-  margin-bottom: 10px;
+  border-radius: 4px;
+  margin-right: 8px;
 }
 
-.order-no, .order-time {
-  font-size: 13px;
-  color: #888;
-  margin-bottom: 4px;
-  line-height: 1.6;
+.order-no,
+.order-time {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
 }
 
+.order-time::before {
+  content: "•";
+  margin: 0 6px;
+  color: var(--color-text-quaternary);
+}
+
+/* 路线信息 */
 .order-route {
-  margin: 20px 0;
   position: relative;
+  padding: 0 8px;
+  margin: 24px 0;
 }
 
 .route-point {
   display: flex;
-  align-items: flex-start; /* 改为flex-start使图标和多行文本顶部对齐 */
-  margin-bottom: 10px; 
+  align-items: flex-start;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
 }
 
-.route-point .point-icon {
-  width: 28px;
-  height: 28px;
+.point-icon {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 500;
   color: white;
   margin-right: 12px;
   flex-shrink: 0;
 }
-.route-point.start .point-icon { background-color: #52c41a; } 
-.route-point.end .point-icon { background-color: #1890ff; } 
 
-.route-point .point-detail {
-  font-size: 15px;
-  color: #333;
-  line-height: 1.5;
-  word-break: break-word; /* 允许长地址换行 */
+.route-point.start .point-icon {
+  background-color: var(--color-success);
+}
+
+.route-point.end .point-icon {
+  background-color: var(--color-primary);
+}
+
+.point-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.main-address {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.detail-address {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 4px 8px;
+  background-color: var(--color-fill-alter);
+  border-radius: 4px;
+  display: inline-block;
+  line-height: 1.4;
 }
 
 .route-line {
   position: absolute;
-  left: 13px; 
-  top: 14px; /* 从第一个图标中心开始 */
-  height: calc(100% - 28px); /* 连接两个图标中心 */
+  left: 11px;
+  top: 12px;
+  height: calc(100% - 24px);
   width: 2px;
-  background-color: #e8e8e8;
+  background-color: var(--color-border);
   z-index: 0;
 }
-.order-image-section {
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-.section-title {
-    font-size: 16px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 12px;
-}
-.order-image-preview {
-  border-radius: 6px;
-  max-width: 100%; 
-  height: auto;
-  display: block; 
+
+/* 配送预估 */
+.delivery-estimate {
+  margin: 24px 0;
+  padding: 16px;
+  background-color: var(--color-fill-alter);
+  border-radius: 8px;
+  border-left: 4px solid var(--color-primary);
 }
 
-.order-info, .order-amount {
-  margin: 20px 0;
+.estimate-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
 }
-.info-item, .amount-item {
+
+.estimate-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.estimate-item .label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.estimate-item .value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+/* 订单图片 */
+.order-image-section {
+  margin: 24px 0;
+}
+
+.order-image-preview {
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: 1px solid var(--color-border);
+}
+
+.order-image-preview:hover {
+  transform: scale(1.02);
+}
+
+/* 信息区块 */
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.section-title::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 14px;
+  background-color: var(--color-primary);
+  margin-right: 8px;
+  border-radius: 2px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 12px;
+}
+
+.info-item {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  font-size: 14px;
-  color: #555;
-  border-bottom: 1px dashed #f0f0f0;
+  font-size: 13px;
 }
-.info-item:last-child, .amount-item:last-child {
-  border-bottom: none;
-}
+
 .info-item .label {
-  color: #888;
-  margin-right: 8px;
-  white-space: nowrap;
-  flex-shrink: 0; /* 防止标签被压缩 */
+  color: var(--color-text-secondary);
+  margin-right: 12px;
+  flex-shrink: 0;
 }
+
 .info-item .value {
-  color: #333;
+  color: var(--color-text);
   text-align: right;
-  word-break: break-all; 
+  word-break: break-word;
 }
 
-.amount-item span:first-child { color: #555; }
-.amount-item .amount, .amount-item .discount { color: #333; }
+/* 金额信息 */
+.order-amount {
+  background-color: var(--color-fill-alter);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.amount-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
 .amount-item.total {
-  font-weight: 500;
+  border-top: 1px solid var(--color-border);
   margin-top: 8px;
-  padding-top: 10px;
-  border-top: 1px solid #e8e8e8; 
-  border-bottom: none; 
-}
-.amount-item .total-amount {
-  font-size: 18px;
-  color: #fa541c; 
+  padding-top: 12px;
+  font-weight: 500;
 }
 
-.deliverer-card .deliverer-info {
+.total-amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+/* 配送员信息 */
+.deliverer-info {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
-.deliverer-info .ant-avatar {
-  margin-right: 16px;
+
+.deliverer-detail {
+  flex: 1;
 }
+
 .deliverer-detail .name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   margin-bottom: 4px;
 }
-.deliverer-detail .rating {
+
+.rating-container {
   display: flex;
   align-items: center;
-  font-size: 13px;
-}
-.deliverer-detail .rating .ant-rate {
-  font-size: 16px; 
-  margin-right: 8px;
-}
-.deliverer-detail .rating-text {
-  color: #faad14; 
+  gap: 8px;
 }
 
+.rating-text {
+  font-size: 13px;
+  color: var(--color-warning);
+}
+
+/* 操作按钮 */
 .action-buttons {
+  display: grid;
+  gap: 12px;
   margin-top: 24px;
-  padding: 0 16px 16px 16px; /* 在内容区底部增加内边距 */
-  /* 如果希望按钮固定在底部，需要不同的布局方式 */
+}
+
+.action-buttons .ant-btn {
+  height: 44px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* 空状态 */
+.empty-state {
   display: flex;
   flex-direction: column;
-  gap: 12px; 
-}
-.action-buttons .ant-btn {
-  height: 44px; /* 按钮高度略微增加 */
-  font-size: 16px; /* 按钮字体大小略微增加 */
-  border-radius: 8px; /* 按钮圆角 */
-}
-.empty-state {
-  text-align: center;
-  padding: 40px 0;
-  color: #888;
-  min-height: 200px; /* 确保空状态时也有一定高度 */
-  display: flex;
   align-items: center;
   justify-content: center;
+  height: 200px;
+  color: var(--color-text-secondary);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .order-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .estimate-info {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -15,3 +15,6 @@ class Config:
     JWT_HEADER_TYPE = 'Bearer'
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static/uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    BAIDU_AI_APP_ID = os.getenv('BAIDU_AI_APP_ID')
+    BAIDU_AI_API_KEY = os.getenv('BAIDU_AI_API_KEY')
+    BAIDU_AI_SECRET_KEY = os.getenv('BAIDU_AI_SECRET_KEY')
