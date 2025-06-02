@@ -421,7 +421,7 @@ const handleUploadChange = async (info) => {
       console.log('图片上传成功，等待500ms后开始AI分析...');
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('token'); // 修改这里
       if (!token) {
         message.error('认证信息在上传过程中丢失，请重新登录');
         return;
@@ -447,11 +447,11 @@ const analyzeOrderImage = async (filename) => {
     return;
   }
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('token'); // 修改这里
 
   if (!token) {
     message.error('认证信息丢失，请重新登录');
-    window.location.href = '/login';
+    window.location.href = '/#/login'; // 修改这里以匹配哈希路由
     return;
   }
 
@@ -550,10 +550,10 @@ const analyzeOrderImage = async (filename) => {
       message.error('AI识别服务暂时不可用，请手动填写信息');
     } else if (error.message.includes('认证失败') || error.message.includes('Token')) {
       message.error('登录状态已过期，请重新登录');
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('token'); // 确保这里也使用 'token'
       localStorage.removeItem('userInfo');
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = '/#/login'; // 修改这里以匹配哈希路由
       }, 1500);
     } else {
       message.error('AI识别失败，请手动填写信息');
