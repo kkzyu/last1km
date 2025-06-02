@@ -52,3 +52,12 @@ def calculate_route(current_user):
             
     except Exception as e:
         return error_response(f"路线规划失败: {str(e)}")
+
+@map_bp.route('/config', methods=['GET'])
+def get_map_config():
+    """获取前端地图配置（无需认证）"""
+    try:
+        config = map_service.get_frontend_map_config()
+        return success_response(config)
+    except Exception as e:
+        return error_response(f"获取地图配置失败: {str(e)}")

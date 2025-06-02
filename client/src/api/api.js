@@ -113,6 +113,7 @@ export const orderAPI = {
 };
 
 export const mapAPI = {
+    getMapConfig: () => api.get('/map/config'),
     searchPlaces: (keyword, city = '杭州') => 
         api.post('/map/search', { keyword, city }),
     calculateRoute: (routeData) => 

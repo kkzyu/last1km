@@ -181,6 +181,33 @@ class MapService:
             error_msg = f"步行路径规划异常: {str(e)}"
             current_app.logger.error(error_msg)
             return {'success': False, 'message': error_msg}
+    
+    def get_frontend_map_config(self):
+        """
+        为前端提供地图配置，只提供必要的公开信息
+        """
+        return {
+            'jsApiKey': self.amap_key,  # 前端JS API使用同一个key
+            'securityJsCode': self.amap_key,  # 高德地图安全密钥
+            'mapConfig': {
+                'defaultCenter': [120.16, 30.26],  # 杭州
+                'defaultZoom': 12,
+                'routeZoom': 13,
+                'singlePointZoom': 15,
+                'markerIcons': {
+                    'start': 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
+                    'end': 'https://webapi.amap.com/theme/v1.3/markers/n/end.png'
+                },
+                'polylineStyle': {
+                    'borderWeight': 2,
+                    'strokeColor': '#0091ff',
+                    'strokeOpacity': 0.8,
+                    'strokeWeight': 6,
+                    'lineJoin': 'round',
+                    'lineCap': 'round'
+                }
+            }
+        }
 
 # 创建全局实例
 map_service = MapService()

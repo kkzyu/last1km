@@ -2,7 +2,7 @@
   <div class="route-info-container">
     <div v-if="routePath" class="delivery-info">
       <div class="info-item">
-        <span class="info-label">预计送达时间：</span>
+        <span class="info-label">预计配送时间：</span>
         <span class="info-value">{{ formatDuration(routePath.duration) }}</span>
       </div>
       <div class="info-item">
@@ -19,6 +19,7 @@
 <script setup>
 import { ref, onMounted, watch, nextTick, computed } from 'vue';
 import { message } from 'ant-design-vue';
+import { mapAPI } from '@/api/api.js';
 
 const props = defineProps({
   origin: {
@@ -43,33 +44,58 @@ let routePolyline = null;
 let startMarker = null;
 let endMarker = null;
 
-// 高德地图 JS API Key (前端公开密钥)
-const AMAP_JS_API_KEY = 'ac47d45ec5e5e8ddf58b95e9e99ede62';
-const AMAP_SECURITY_JS_CODE = 'ac47d45ec5e5e8ddf58b95e9e99ede62';
+// 地图配置，从后端获取
+let mapConfig = null;
 
-const loadAmapScript = () => {
-  return new Promise((resolve, reject) => {
+const fetchMapConfig = async () => {
+  try {
+    const response = await mapAPI.getMapConfig();
+    if (response.data.success) {
+      mapConfig = response.data.data;
+      return mapConfig;
+    } else {
+      throw new Error(response.data.message || '获取地图配置失败');
+    }
+  } catch (error) {
+    console.error('获取地图配置失败:', error);
+    message.error('地图配置加载失败');
+    throw error;
+  }
+};
+
+const loadAmapScript = async () => {
+  return new Promise(async (resolve, reject) => {
     if (window.AMap) {
       resolve(window.AMap);
       return;
     }
-    window._AMapSecurityConfig = {
-      securityJsCode: AMAP_SECURITY_JS_CODE,
-    };
-    const script = document.createElement('script');
-    // Load only core map, Marker, Polyline. Driving plugin not directly used for search here.
-    script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_JS_API_KEY}&plugin=AMap.Marker,AMap.Polyline`;
-    script.onload = () => {
-      if (window.AMap) {
-        resolve(window.AMap);
-      } else {
-        reject(new Error('高德地图脚本加载失败'));
+    
+    try {
+      // 从后端获取地图配置
+      if (!mapConfig) {
+        mapConfig = await fetchMapConfig();
       }
-    };
-    script.onerror = (err) => {
-      reject(new Error(`高德地图脚本加载失败: ${err.message}`));
-    };
-    document.head.appendChild(script);
+      
+      window._AMapSecurityConfig = {
+        securityJsCode: mapConfig.securityJsCode,
+      };
+      
+      const script = document.createElement('script');
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${mapConfig.jsApiKey}&plugin=AMap.Marker,AMap.Polyline`;
+      script.onload = () => {
+        if (window.AMap) {
+          resolve(window.AMap);
+        } else {
+          reject(new Error('高德地图脚本加载失败'));
+        }
+      };
+      script.onerror = (err) => {
+        reject(new Error(`高德地图脚本加载失败: ${err.message}`));
+      };
+      document.head.appendChild(script);
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
@@ -101,7 +127,6 @@ const initMap = async () => {
     message.error('地图容器加载失败');
     return;
   }
-
   try {
     const AMap = await loadAmapScript();
     if (!AMap) {
@@ -109,22 +134,22 @@ const initMap = async () => {
       return;
     }
 
-    // 默认显示北京市中心，如果有起点终点则显示中心点
-    let center = [116.397428, 39.90923]; // 北京市中心
-    let zoom = 10;
+    // 使用从后端获取的默认配置
+    let center = mapConfig.mapConfig.defaultCenter;
+    let zoom = mapConfig.mapConfig.defaultZoom;
 
     if (props.origin && props.destination) {
       center = [
         (props.origin.lng + props.destination.lng) / 2,
         (props.origin.lat + props.destination.lat) / 2,
       ];
-      zoom = 12;
+      zoom = mapConfig.mapConfig.routeZoom;
     } else if (props.origin) {
       center = [props.origin.lng, props.origin.lat];
-      zoom = 15;
+      zoom = mapConfig.mapConfig.singlePointZoom;
     } else if (props.destination) {
       center = [props.destination.lng, props.destination.lat];
-      zoom = 15;
+      zoom = mapConfig.mapConfig.singlePointZoom;
     }
 
     mapInstance = new AMap.Map(mapContainer.value, {
@@ -172,13 +197,11 @@ const drawRouteAndMarkers = () => {
   const AMap = window.AMap;
 
   clearMapElements();
-
   // Draw Markers with different icons and clear labels
   if (props.origin) {
     startMarker = new AMap.Marker({
       position: new AMap.LngLat(props.origin.lng, props.origin.lat),
-      // 使用绿色标记表示起点
-      icon: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
+      icon: mapConfig.mapConfig.markerIcons.start,
       offset: new AMap.Pixel(-9, -31),
       title: '起点',
     });
@@ -188,8 +211,7 @@ const drawRouteAndMarkers = () => {
   if (props.destination) {
     endMarker = new AMap.Marker({
       position: new AMap.LngLat(props.destination.lng, props.destination.lat),
-      // 使用红色标记表示终点
-      icon: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
+      icon: mapConfig.mapConfig.markerIcons.end,
       offset: new AMap.Pixel(-9, -31),
       title: '终点',
     });
@@ -214,33 +236,25 @@ const drawRouteAndMarkers = () => {
           }
         });
       }
-    });
-
-    if (pathCoords.length > 0) {
+    });    if (pathCoords.length > 0) {
       routePolyline = new AMap.Polyline({
         path: pathCoords,
-        borderWeight: 2,
-        strokeColor: '#0091ff', // Blue color for the route
-        strokeOpacity: 0.8,
-        strokeWeight: 6,
-        lineJoin: 'round',
-        lineCap: 'round',
+        ...mapConfig.mapConfig.polylineStyle
       });
       mapInstance.add(routePolyline);
-      mapInstance.setFitView([startMarker, endMarker, routePolyline], false, [60, 60, 60, 60]); // Adjust padding as needed
+      mapInstance.setFitView([startMarker, endMarker, routePolyline], false, [60, 60, 60, 60]);
     } else {
        if (startMarker && endMarker) mapInstance.setFitView([startMarker, endMarker]);
     }
   } else {
     // If no route path, just fit markers
     if (startMarker && endMarker) {
-      mapInstance.setFitView([startMarker, endMarker]);
-    } else if (startMarker) {
+      mapInstance.setFitView([startMarker, endMarker]);    } else if (startMarker) {
       mapInstance.setCenter(startMarker.getPosition());
-      mapInstance.setZoom(15);
+      mapInstance.setZoom(mapConfig.mapConfig.singlePointZoom);
     } else if (endMarker) {
       mapInstance.setCenter(endMarker.getPosition());
-      mapInstance.setZoom(15);
+      mapInstance.setZoom(mapConfig.mapConfig.singlePointZoom);
     }
   }
 };
@@ -259,20 +273,19 @@ watch(
       initMap();
       return;
     }
-    
-    // 根据新的起点终点更新地图中心
+      // 根据新的起点终点更新地图中心
     if (newOrigin && newDest) {
       mapInstance.setCenter([
         (newOrigin.lng + newDest.lng) / 2,
         (newOrigin.lat + newDest.lat) / 2,
       ]);
-      mapInstance.setZoom(12);
+      mapInstance.setZoom(mapConfig.mapConfig.routeZoom);
     } else if (newOrigin) {
       mapInstance.setCenter([newOrigin.lng, newOrigin.lat]);
-      mapInstance.setZoom(15);
+      mapInstance.setZoom(mapConfig.mapConfig.singlePointZoom);
     } else if (newDest) {
       mapInstance.setCenter([newDest.lng, newDest.lat]);
-      mapInstance.setZoom(15);
+      mapInstance.setZoom(mapConfig.mapConfig.singlePointZoom);
     }
     
     if (!props.routePath) {
