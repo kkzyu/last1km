@@ -118,8 +118,8 @@ const loadChatHistory = async () => {
     if (response.data && response.data.success && response.data.data.messages) {
       const historyMessages = response.data.data.messages.map(msg => ({
         id: msg.id,
-        sender: msg.sender === 'agent' ? 'ai' : msg.sender,
-        content: msg.content,
+        sender: msg.sender_type === 'agent' ? 'ai' : 'user', // Ensure mapping from sender_type
+        content: msg.message_content, // Correctly map from message_content
         timestamp: new Date(msg.timestamp)
       }))
       

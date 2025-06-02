@@ -212,7 +212,17 @@ const handleOrderClick = (orderId) => {
   padding: 16px;
   background-color: var(--color-bg-container);
   min-height: 100%;
+  max-height: calc(100vh - 120px); /* 设置最大高度，减去头部和底部导航的高度 */
+  overflow-y: auto; /* 启用垂直滚动 */
   box-sizing: border-box;
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* 隐藏 Webkit 浏览器的滚动条 */
+.history-orders::-webkit-scrollbar {
+  display: none;
 }
 
 .section-header {
@@ -231,6 +241,16 @@ const handleOrderClick = (orderId) => {
 .order-list {
   background-color: var(--color-bg-container);
   border-radius: 8px;
+  max-height: calc(100vh - 200px); /* 为订单列表设置最大高度 */
+  overflow-y: auto; /* 启用垂直滚动 */
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* 隐藏 Webkit 浏览器的滚动条 */
+.order-list::-webkit-scrollbar {
+  display: none;
 }
 
 .date-group {
@@ -250,7 +270,7 @@ const handleOrderClick = (orderId) => {
 
 .order-item {
   margin-bottom: 12px;
-  border-radius: 8px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--box-shadow-sm);
   cursor: pointer;
@@ -367,6 +387,7 @@ const handleOrderClick = (orderId) => {
   font-size: 12px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2; /* 标准属性 */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -380,7 +401,8 @@ const handleOrderClick = (orderId) => {
 }
 
 .order-actions {
-  /* align-self: center; */
+  display: flex;
+  align-items: center;
 }
 
 .empty-state, 
@@ -404,6 +426,14 @@ const handleOrderClick = (orderId) => {
   .order-actions {
     align-self: flex-end;
     margin-top: 12px;
+  }
+
+  .history-orders {
+    max-height: calc(100vh - 140px); /* 在移动端调整最大高度 */
+  }
+
+  .order-list {
+    max-height: calc(100vh - 220px); /* 在移动端调整订单列表最大高度 */
   }
 }
 </style>

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, Response, stream_with_context
 from http import HTTPStatus
 from dashscope import Application
 from models.chat_message import ChatMessage
@@ -14,11 +14,10 @@ chat_bp = Blueprint('chat', __name__)
 @chat_bp.route('/', methods=['POST', 'OPTIONS'])
 @token_required
 def chat(current_user):
-    """处理聊天消息 - 带用户认证和历史记录"""
+    """处理聊天消息 - 带用户认证和历史记录 (流式传输)"""
     try:
         data = request.get_json()
         user_message = data.get('message', '').strip()
-        # context = data.get('context', '') # context 变量未使用
 
         if not user_message:
             return error_response("消息内容不能为空", 400)
@@ -125,43 +124,69 @@ def chat(current_user):
         full_prompt = f"{system_prompt}\n\n用户当前问题：{user_message}"
         current_app.logger.debug(f"Full prompt for DashScope: {full_prompt[:500]}...")
 
-        responses = Application.call(
-            app_id=APP_ID,
-            api_key=DASHCOPE_API_KEY,
-            prompt=full_prompt,
-            stream=False
-        )
-        
-        if responses.status_code == HTTPStatus.OK:
-            reply_text = responses.output.text if responses.output and responses.output.text else '抱歉，我暂时无法回答您的问题，请尝试换个问法或联系人工客服。'
-            
-            ai_chat_message = ChatMessage(
-                user_id=current_user.id,
-                sender_type='agent',
-                message_content=reply_text
-            )
-            db.session.add(ai_chat_message)
-            db.session.commit()
-            
-            return success_response({'reply': reply_text})
-        else:
-            error_message = f"AI服务错误: Code {responses.code} - {responses.message}"
-            current_app.logger.error(f"DashScope error: {error_message} (request_id: {responses.request_id})")
-            
-            reply_text = '抱歉，客服机器人暂时开小差了，请稍后再试或直接拨打客服热线。'
-            
-            ai_chat_message = ChatMessage(
-                user_id=current_user.id,
-                sender_type='agent',
-                message_content=reply_text 
-            )
-            db.session.add(ai_chat_message)
-            db.session.commit()
-            
-            return success_response({'reply': reply_text})
+        def generate_responses():
+            accumulated_reply = ""
+            try:
+                responses = Application.call(
+                    app_id=APP_ID,
+                    api_key=DASHCOPE_API_KEY,
+                    prompt=full_prompt,
+                    stream=True  # 启用流式输出
+                )
+
+                for response_chunk in responses:
+                    if response_chunk.status_code == HTTPStatus.OK:
+                        chunk_text = response_chunk.output.text if response_chunk.output and response_chunk.output.text else ''
+                        accumulated_reply += chunk_text
+                        # SSE format: data: {...}\n\n
+                        yield f"data: {json.dumps({'chunk': chunk_text})}\n\n"
+                    else:
+                        error_message_chunk = f"AI服务流式响应错误: Code {response_chunk.code} - {response_chunk.message}"
+                        current_app.logger.error(f"DashScope stream error: {error_message_chunk} (request_id: {response_chunk.request_id})")
+                        yield f"data: {json.dumps({'error': error_message_chunk, 'final_chunk': True})}\n\n"
+                        # 保存部分回复（如果已有）或错误提示
+                        if not accumulated_reply:
+                             accumulated_reply = '抱歉，客服机器人暂时开小差了，请稍后再试或直接拨打客服热线。'
+                        break 
+                
+                # 流结束后，保存完整的AI回复
+                if accumulated_reply:
+                    ai_chat_message = ChatMessage(
+                        user_id=current_user.id,
+                        sender_type='agent',
+                        message_content=accumulated_reply.strip() # 去除可能存在的末尾空字符
+                    )
+                    db.session.add(ai_chat_message)
+                    db.session.commit()
+                yield f"data: {json.dumps({'message': 'Stream ended', 'final_chunk': True})}\n\n"
+
+            except Exception as e_stream:
+                current_app.logger.error(f"DashScope流处理错误: {str(e_stream)}", exc_info=True)
+                error_reply = '抱歉，处理您的请求时发生流错误，请稍后再试。'
+                yield f"data: {json.dumps({'error': error_reply, 'final_chunk': True})}\n\n"
+                # 尝试保存错误信息
+                try:
+                    if not accumulated_reply: # 如果流开始前就出错，accumulated_reply可能为空
+                        accumulated_reply = error_reply
+                    
+                    error_save_message = ChatMessage(
+                        user_id=current_user.id,
+                        sender_type='agent',
+                        message_content=accumulated_reply.strip() if accumulated_reply else error_reply
+                    )
+                    db.session.add(error_save_message)
+                    db.session.commit()
+                except Exception as db_error_stream:
+                    current_app.logger.error(f"保存流错误回复到数据库失败: {str(db_error_stream)}")
+                    db.session.rollback()
+
+        return Response(stream_with_context(generate_responses()), mimetype='text/event-stream')
 
     except Exception as e:
-        current_app.logger.error(f"聊天处理错误: {str(e)}", exc_info=True)
+        current_app.logger.error(f"聊天处理错误 (非流部分): {str(e)}", exc_info=True)
+        # 这种错误通常在流开始前发生，因此直接返回JSON错误
+        # 但为了客户端统一处理，也可以考虑返回SSE错误事件
+        # 这里我们保持原有逻辑，返回JSON错误，因为流尚未启动
         
         reply_text = '抱歉，系统发生内部错误，我们正在紧急处理。请稍后再试或联系人工客服。'
         
@@ -174,10 +199,11 @@ def chat(current_user):
             db.session.add(error_save_message)
             db.session.commit()
         except Exception as db_error:
-            current_app.logger.error(f"保存错误回复到数据库失败: {str(db_error)}")
+            current_app.logger.error(f"保存主错误回复到数据库失败: {str(db_error)}")
             db.session.rollback()
         
-        return success_response({'reply': reply_text})
+        # 对于非流启动前的错误，返回JSON错误响应更合适
+        return error_response(reply_text, 500)
 
 @chat_bp.route('/history', methods=['GET'])
 @token_required

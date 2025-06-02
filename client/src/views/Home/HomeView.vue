@@ -88,6 +88,22 @@
         </div>
       </div>
     </a-modal>
+
+    <!-- 客服聊天悬浮按钮 -->
+    <a-float-button 
+      class="fab-chat-button" 
+      type="primary" 
+      @click="openChat"
+      tooltip="联系客服"
+    >
+      <template #icon>
+        <MessageOutlined />
+      </template>
+    </a-float-button>
+
+    <!-- 客服聊天组件 -->
+    <CustomerChat v-if="showChat" @close="closeChat" />
+
   </a-layout>
 </template>
 
@@ -99,8 +115,9 @@ import HomeCarousel from '@/components/Home/HomeCarousel.vue';
 import OrderHistory from '@/components/Home/HomeOrderhistory.vue';
 import AppHeader from '@/components/Header/HomeHead.vue';
 import AppFooter from '@/components/Bottom/BottomNav.vue';
+import CustomerChat from '@/components/Profile/CustomerChat.vue'; // 导入客服聊天组件
 import { message } from 'ant-design-vue';
-import { ExclamationCircleOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { ExclamationCircleOutlined, DeleteOutlined, MessageOutlined } from '@ant-design/icons-vue'; // 添加 MessageOutlined
 
 const router = useRouter();
 const orderStore = useOrderStore();
@@ -109,6 +126,7 @@ const orderStore = useOrderStore();
 const cancelModalVisible = ref(false);
 const deleteModalVisible = ref(false);
 const reviewModalVisible = ref(false);
+const showChat = ref(false); // 控制聊天界面的显示
 
 // 加载状态
 const cancelLoading = ref(false);
@@ -123,6 +141,14 @@ const reviewForm = reactive({
   rating: 5,
   comment: ''
 });
+
+const openChat = () => {
+  showChat.value = true;
+};
+
+const closeChat = () => {
+  showChat.value = false;
+};
 
 onMounted(() => {
   orderStore.loadOrders();
@@ -204,6 +230,7 @@ const publishNewOrder = () => {
   background-color: #f5f5f7;
   display: flex;
   flex-direction: column;
+  position: relative; /* 为悬浮按钮提供定位上下文 */
 }
 
 .home-content {
@@ -236,5 +263,12 @@ const publishNewOrder = () => {
 
 .form-item .ant-rate {
   margin-bottom: 4px;
+}
+
+.fab-chat-button {
+  position: absolute; /* 改为相对于父容器定位 */
+  right: 15px;
+  bottom: 150px; /* 调整为典型底部导航栏高度，使按钮位于其正上方 */
+  z-index: 999;
 }
 </style>
