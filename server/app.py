@@ -7,6 +7,7 @@ from models.user import User
 from models.order import Order  
 from models.deliverer import Deliverer
 from models.address import Address
+from models.chat_message import ChatMessage  # 添加这行
 import os
 import traceback
 

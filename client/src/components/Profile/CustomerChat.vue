@@ -11,17 +11,30 @@
             <span class="status online">在线</span>
           </div>
         </div>
-        <button class="close-button" @click="$emit('close')">
-          <i class="fas fa-times"></i>
-        </button>
+        <div class="header-actions">
+          <button class="action-button" @click="clearHistory" :disabled="loading" title="清空聊天记录">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="close-button" @click="$emit('close')">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       </div>
       
       <div class="chat-container">
         <div class="chat-messages" ref="messagesContainer">
+          <!-- 历史消息加载状态 -->
+          <div v-if="loadingHistory" class="loading-history">
+            <div class="history-loader">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span>加载聊天记录中...</span>
+            </div>
+          </div>
+          
           <div 
             v-for="(message, index) in messages" 
-            :key="index" 
-            :class="['message', message.sender]"
+            :key="message.id || index" 
+            :class="['message', message.sender === 'user' ? 'user' : 'ai']"
           >
             <div class="message-content">
               {{ message.content }}
@@ -52,7 +65,7 @@
             class="message-input"
             :disabled="loading"
           />
-          <button @click="sendMessage" class="send-button" :disabled="loading">
+          <button @click="sendMessage" class="send-button" :disabled="loading || !userInput.trim()">
             发送
           </button>
         </div>
@@ -64,6 +77,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import axios from 'axios'
+import { message as antMessage } from 'ant-design-vue'
 
 // 定义事件
 const emit = defineEmits(['close'])
@@ -72,58 +86,187 @@ const userInput = ref('')
 const messages = ref([])
 const messagesContainer = ref(null)
 const loading = ref(false)
+const loadingHistory = ref(false)
 
 const API_URL = '/api/chat'
+const HISTORY_URL = '/api/chat/history'
+const CLEAR_URL = '/api/chat/clear'
 
+// 检查认证状态
+const checkAuth = () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    console.error('用户未登录')
+    antMessage.error('请先登录后再使用客服功能')
+    emit('close')
+    return false
+  }
+  return true
+}
+
+// 加载聊天历史记录
+const loadChatHistory = async () => {
+  if (!checkAuth()) return
+  
+  loadingHistory.value = true
+  try {
+    console.log('开始加载聊天历史...')
+    const response = await axios.get(HISTORY_URL)
+    
+    console.log('聊天历史响应:', response.data)
+    
+    if (response.data && response.data.success && response.data.data.messages) {
+      const historyMessages = response.data.data.messages.map(msg => ({
+        id: msg.id,
+        sender: msg.sender === 'agent' ? 'ai' : msg.sender,
+        content: msg.content,
+        timestamp: new Date(msg.timestamp)
+      }))
+      
+      messages.value = historyMessages
+      
+      if (historyMessages.length === 0) {
+        addWelcomeMessage()
+      }
+    } else {
+      addWelcomeMessage()
+    }
+  } catch (error) {
+    console.error('加载聊天历史失败:', error)
+    if (error.response?.status === 401) {
+      antMessage.error('认证失败，请重新登录')
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      emit('close')
+      return
+    }
+    addWelcomeMessage()
+  } finally {
+    loadingHistory.value = false
+    await nextTick()
+    scrollToBottom()
+  }
+}
+
+// 添加欢迎消息
+const addWelcomeMessage = () => {
+  messages.value.push({
+    id: 'welcome',
+    sender: 'ai',
+    content: `您好！我是ZJU Last1KM的智能客服，很高兴为您服务！
+
+我可以帮您处理：
+• 查询和管理您的订单
+• 配送服务相关问题
+• 费用计算和退款申请
+• 根据您的个人信息提供个性化建议
+• 其他平台服务问题
+
+请告诉我您需要什么帮助？`,
+    timestamp: new Date()
+  })
+}
+
+// 发送消息
 const sendMessage = async () => {
   if (!userInput.value.trim() || loading.value) return
+  if (!checkAuth()) return
 
-  addMessage('user', userInput.value)
-  const messageToSend = userInput.value
+  const messageToSend = userInput.value.trim()
+  
+  // 添加用户消息到界面
+  const userMessage = {
+    id: `user_${Date.now()}`,
+    sender: 'user',
+    content: messageToSend,
+    timestamp: new Date()
+  }
+  messages.value.push(userMessage)
+  
   userInput.value = ''
   loading.value = true
   
+  await nextTick()
+  scrollToBottom()
+  
   try {
+    console.log('发送消息:', messageToSend)
+    
     const response = await axios.post(API_URL, {
       message: messageToSend,
       context: 'customer_service'
     })
     
+    console.log('发送消息响应:', response.data)
+    
     if (response.data && response.data.success && response.data.data && response.data.data.reply) {
-      addMessage('ai', response.data.data.reply)
-    } else if (response.data && response.data.reply) {
-      addMessage('ai', response.data.reply)
+      const aiMessage = {
+        id: `ai_${Date.now()}`,
+        sender: 'ai',
+        content: response.data.data.reply,
+        timestamp: new Date()
+      }
+      messages.value.push(aiMessage)
     } else {
-      addMessage('ai', '抱歉，客服暂时无法回复，请稍后再试或拨打客服热线：400-123-4567')
+      throw new Error('响应格式异常')
     }
   } catch (error) {
     console.error('发送消息失败:', error)
+    
     let errorMessage = '网络连接异常，请检查网络或拨打客服热线：400-123-4567'
     
     if (error.response) {
-      // 服务器响应了错误状态码
-      if (error.response.status === 404) {
+      console.error('错误响应:', error.response.data)
+      if (error.response.status === 401) {
+        errorMessage = '认证失败，请重新登录'
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        emit('close')
+        return
+      } else if (error.response.status === 404) {
         errorMessage = '客服服务暂时不可用，请稍后再试'
       } else if (error.response.status >= 500) {
         errorMessage = '服务器错误，请稍后重试'
       }
-    } else if (error.request) {
-      // 请求发出但没有收到响应
-      errorMessage = '无法连接到服务器，请检查网络连接'
     }
     
-    addMessage('ai', errorMessage)
+    const errorMsg = {
+      id: `error_${Date.now()}`,
+      sender: 'ai',
+      content: errorMessage,
+      timestamp: new Date()
+    }
+    messages.value.push(errorMsg)
   } finally {
     loading.value = false
+    await nextTick()
+    scrollToBottom()
   }
 }
 
-const addMessage = async (sender, content) => {
-  messages.value.push({
-    sender,
-    content,
-    timestamp: new Date()
-  })
+// 清空聊天记录
+const clearHistory = async () => {
+  if (!checkAuth()) return
+  
+  try {
+    const response = await axios.delete(CLEAR_URL)
+    
+    if (response.data && response.data.success) {
+      messages.value = []
+      addWelcomeMessage()
+      antMessage.success('聊天记录已清空')
+    } else {
+      antMessage.error('清空聊天记录失败')
+    }
+  } catch (error) {
+    console.error('清空聊天记录失败:', error)
+    if (error.response && error.response.status === 401) {
+      antMessage.error('认证失败，请重新登录')
+      emit('close')
+    } else {
+      antMessage.error('清空聊天记录失败，请稍后重试')
+    }
+  }
   
   await nextTick()
   scrollToBottom()
@@ -136,6 +279,9 @@ const scrollToBottom = () => {
 }
 
 const formatTime = (date) => {
+  if (!(date instanceof Date)) {
+    date = new Date(date)
+  }
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
@@ -143,16 +289,25 @@ const handleOverlayClick = () => {
   emit('close')
 }
 
-// 组件挂载时初始化
+// 组件挂载时加载历史记录
 onMounted(() => {
-  addMessage('ai', `您好！我是ZJU Last1KM的在线客服，很高兴为您服务！请问有什么可以帮助您的吗？
-
-您可以咨询：
-• 订单相关问题
-• 配送服务问题
-• 费用计算问题
-• 退款申请
-• 其他服务问题`)
+  console.log('CustomerChat 组件挂载')
+  
+  // 检查认证状态并显示调试信息
+  const token = localStorage.getItem('token')
+  const user = localStorage.getItem('user')
+  
+  console.log('认证状态检查:')
+  console.log('- Token存在:', !!token)
+  console.log('- User存在:', !!user)
+  console.log('- Token前20位:', token ? token.substring(0, 20) + '...' : 'null')
+  
+  if (token) {
+    loadChatHistory()
+  } else {
+    antMessage.error('请先登录后再使用客服功能')
+    emit('close')
+  }
 })
 </script>
 
@@ -177,7 +332,7 @@ onMounted(() => {
 
 .chat-app {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   height: 80vh;
   max-height: 600px;
   background-color: white;
@@ -203,6 +358,12 @@ onMounted(() => {
 .header-info {
   display: flex;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .avatar {
@@ -238,19 +399,29 @@ onMounted(() => {
   background-color: #28a745;
 }
 
-.close-button {
+.action-button, .close-button {
   background: none;
   border: none;
   color: white;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   padding: 6px;
   border-radius: 50%;
   transition: background-color 0.2s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.close-button:hover {
+.action-button:hover:not(:disabled), .close-button:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .chat-container {
@@ -268,6 +439,24 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.loading-history {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.history-loader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.history-loader i {
+  color: #667eea;
 }
 
 .message {
@@ -430,7 +619,7 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 410px) {
+@media (max-width: 430px) {
   .chat-overlay {
     padding: 10px;
   }
@@ -438,6 +627,7 @@ onMounted(() => {
   .chat-app {
     height: 85vh;
     border-radius: 15px;
+    max-width: 100%;
   }
   
   .chat-header {
@@ -482,20 +672,6 @@ onMounted(() => {
   .send-button {
     padding: 8px 14px;
     font-size: 12px;
-  }
-}
-
-@media (max-width: 350px) {
-  .chat-overlay {
-    padding: 5px;
-  }
-  
-  .chat-app {
-    border-radius: 12px;
-  }
-  
-  .message {
-    max-width: 95%;
   }
 }
 </style>
