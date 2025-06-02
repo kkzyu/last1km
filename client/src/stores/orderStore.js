@@ -164,6 +164,36 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
+    async cancelOrder(orderId) {
+      try {
+        const response = await orderAPI.cancelOrder(orderId);
+        if (response.data && response.data.success) {
+          // 重新获取订单列表以更新状态
+          await this.fetchOrders();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('取消订单失败:', error);
+        throw error;
+      }
+    },
+
+    async reviewOrder(orderId, reviewData) {
+      try {
+        const response = await orderAPI.reviewOrder(orderId, reviewData);
+        if (response.data && response.data.success) {
+          // 重新获取订单列表以更新状态
+          await this.fetchOrders();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('评价订单失败:', error);
+        throw error;
+      }
+    },
+
     async deleteOrder(orderId) {
       try {
         const response = await orderAPI.deleteOrder(orderId);

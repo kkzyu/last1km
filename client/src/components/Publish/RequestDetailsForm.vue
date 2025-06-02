@@ -76,22 +76,13 @@
           />
         </a-form-item>
       </a-col>
-    </a-row>
-
-    <!-- 显示预计送达时间 -->     
-    <div v-if="estimatedTime" class="estimated-time">
-      <a-alert type="info" class="time-alert">
-        <template #message>
-          <span class="alert-message-custom">
-            <span class="alert-icon">🛵</span>
-            <span>
-              预计{{ estimatedTime.mode || '骑行' }}送达时间：
-              <strong class="alert-value">{{ estimatedTime.duration }}分钟</strong>
-              (距离：<strong class="alert-value">{{ estimatedTime.distance }}km</strong>)
-            </span>
-          </span>
-        </template>
-      </a-alert>
+    </a-row>    <!-- 显示地图路线 -->
+    <div v-if="props.request.originLocation && props.request.destinationLocation" class="route-map-section">
+      <RouteMap 
+        :origin="props.request.originLocation"
+        :destination="props.request.destinationLocation"
+        :route-path="routePath"
+      />
     </div>
 
     <a-divider />
@@ -204,6 +195,7 @@ import { PlusOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { orderAPI } from '@/api/api';
 import AddressSearch from '@/components/UI/AddressSearch.vue';
+import RouteMap from '@/components/UI/RouteMap.vue';
 import { mapAPI } from '@/api/api';
 
 const props = defineProps({
@@ -327,6 +319,9 @@ const showDebugInfo = ref(process.env.NODE_ENV === 'development'); // 只在开�
 const originLocation = computed(() => props.request.originLocation);
 const destinationLocation = computed(() => props.request.destinationLocation);
 const estimatedTime = computed(() => props.request.estimatedTime);
+
+// 路线数据状态
+const routePath = ref(null);
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -686,6 +681,8 @@ const handleOriginClear = () => {
     originLocation: null,
     estimatedTime: null
   });
+  // 清除路线路径数据
+  routePath.value = null;
 };
 
 const handleDestinationClear = () => {
@@ -695,6 +692,8 @@ const handleDestinationClear = () => {
     destinationLocation: null,
     estimatedTime: null
   });
+  // 清除路线路径数据
+  routePath.value = null;
 };
 
 // 修复路线计算函数
@@ -724,12 +723,19 @@ const calculateRoute = async () => {
       origin,
       destination
     });
-    
-    if (response.data && response.data.success) {
+      if (response.data && response.data.success) {
       console.log('路线计算成功:', response.data.data);
+      
+      // 设置预计时间和距离信息
       emitUpdateRequest({ 
         estimatedTime: response.data.data 
       });
+      
+      // 设置路线详细信息给地图组件
+      if (response.data.data.route_info) {
+        routePath.value = response.data.data.route_info;
+      }
+      
       message.success(`路线规划成功！预计骑行${response.data.data.duration}分钟`);
     } else {
       console.error('路线计算失败:', response.data?.message);
@@ -759,12 +765,13 @@ watch(
       if (originChanged || destinationChanged) {
         console.log('位置发生变化，开始计算路线');
         setTimeout(() => calculateRoute(), 100);
-      }
-    } else if (!newOrigin || !newDestination) {
+      }    } else if (!newOrigin || !newDestination) {
       // 如果任一位置被清空，清除路线信息
       if (props.request.estimatedTime) {
         emitUpdateRequest({ estimatedTime: null });
       }
+      // 清除路线路径数据
+      routePath.value = null;
     }
   },
   { deep: true }
@@ -941,6 +948,56 @@ watch(() => props.request, (newRequest, oldRequest) => {
 .request-details-form .ant-form-item:has(span:contains("具体位置")) .ant-input:focus {
   border-color: #1890ff;
   background-color: #fff;
+}
+
+/* 路线地图区域样式 */
+.route-map-section {
+  margin: 20px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e8e8e8;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.route-map-section .route-info-container {
+  background-color: #ffffff;
+}
+
+.route-map-section .delivery-info {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.route-map-section .info-value {
+  color: white;
+  font-weight: 600;
+}
+
+.route-map-section .info-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.route-map-section .route-map-container {
+  border-radius: 0;
+  border: none;
+  height: 250px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .route-map-section {
+    margin: 16px -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .route-map-section .route-map-container {
+    height: 200px;
+  }
 }
 
 </style>
