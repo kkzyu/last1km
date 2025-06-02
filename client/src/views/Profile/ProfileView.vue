@@ -20,7 +20,7 @@
       </div>
 
       <div class="profile-info-group"> <!-- Separate group for contact -->
-        <div class="personal-info"> <!-- This item does not navigate, so no top-level click handler -->
+        <div class="personal-info" @click="navigateTo('/profile/contact-service')"> <!-- This item does not navigate, so no top-level click handler -->
           <span class="icon1"><i class="fas fa-headphones"></i></span>
           <p class="description">联系客服</p>
           <span class="icon2"><i class="fas fa-angle-right"></i></span> 

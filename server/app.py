@@ -1,4 +1,4 @@
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request, jsonify, send_from_directory
 from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager
 from config import Config
@@ -83,20 +83,22 @@ def create_app():
     from routes.orders import orders_bp
     from routes.users import users_bp
     from routes.map import map_bp
+    from routes.faq import faq_bp
+    from routes.chat import chat_bp  # 导入聊天路由
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(map_bp, url_prefix='/api/map')
-    
-    from flask import send_from_directory
+    app.register_blueprint(faq_bp, url_prefix='/api/faq')
+    app.register_blueprint(chat_bp, url_prefix='/api/chat')  # 注册聊天路由
 
     @app.route('/static/uploads/<filename>')
     def uploaded_file(filename):
         upload_folder = app.config.get('UPLOAD_FOLDER')
         return send_from_directory(upload_folder, filename)
     
-        # 添加调试路由
+    # 添加调试路由
     @app.route('/debug/routes')
     def debug_routes():
         routes = []

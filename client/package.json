@@ -16,6 +16,7 @@
     "ant-design-vue": "^4.0.0-rc.6",
     "antd": "^5.25.2",
     "axios": "^1.9.0",
+    "markdown-it": "^14.1.0",
     "pinia": "^3.0.2",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"

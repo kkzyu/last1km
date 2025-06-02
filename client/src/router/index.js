@@ -15,6 +15,7 @@ const RiderProfilePage = () => import('@/views/Messages/RiderProfilePage.vue')
 const ProfilePersonal = () => import('@/views/Profile/ProfilePersonal.vue')
 const ProfileOrderHistory = () => import('@/views/Profile/ProfileOrderHistory.vue')
 const ProfileSwitchAccount = () => import('@/views/Profile/ProfileSwitchAccount.vue')
+const ContactServiceView = () => import('@/views/Profile/ContactServiceView.vue')
 import OrderDetail from '@/views/Order/OrderDetail.vue'
 
 const routes = [
@@ -114,8 +115,7 @@ const routes = [
       requiresAuth: true,
       title: '历史订单'
     }
-  },
-  {
+  },  {
     path: '/profile/switch-account',
     name: 'profile-switch-account',
     component: () => import('@/views/Profile/ProfileSwitchAccount.vue'),
@@ -123,6 +123,11 @@ const routes = [
       requiresAuth: true,
       title: '切换账号'
     }
+  },
+  {
+    path: '/profile/contact-service',
+    name: 'ContactService',
+    component: ContactServiceView
   },
   // Fallback route for 404
   {
