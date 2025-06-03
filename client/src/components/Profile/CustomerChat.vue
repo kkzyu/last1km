@@ -76,7 +76,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import axios from 'axios'
+import { userAPI } from '@/api/api'
 import { message as antMessage } from 'ant-design-vue'
 
 // 定义事件
@@ -88,9 +88,9 @@ const messagesContainer = ref(null)
 const loading = ref(false)
 const loadingHistory = ref(false)
 
-const API_URL = '/api/chat'
-const HISTORY_URL = '/api/chat/history'
-const CLEAR_URL = '/api/chat/clear'
+const API_URL = '/chat'
+const HISTORY_URL = '/chat/history'
+const CLEAR_URL = '/chat/clear'
 
 // 检查认证状态
 const checkAuth = () => {
@@ -111,7 +111,7 @@ const loadChatHistory = async () => {
   loadingHistory.value = true
   try {
     console.log('开始加载聊天历史...')
-    const response = await axios.get(HISTORY_URL)
+    const response = await userAPI.getChatHistory()
     
     console.log('聊天历史响应:', response.data)
     
@@ -188,11 +188,10 @@ const sendMessage = async () => {
   
   await nextTick()
   scrollToBottom()
-  
-  try {
+    try {
     console.log('发送消息:', messageToSend)
     
-    const response = await axios.post(API_URL, {
+    const response = await userAPI.sendChatMessage({
       message: messageToSend,
       context: 'customer_service'
     })
@@ -249,7 +248,7 @@ const clearHistory = async () => {
   if (!checkAuth()) return
   
   try {
-    const response = await axios.delete(CLEAR_URL)
+    const response = await userAPI.clearChatHistory()
     
     if (response.data && response.data.success) {
       messages.value = []

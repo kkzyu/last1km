@@ -93,6 +93,11 @@ export const userAPI = {
     addAddress: (addressData) => api.post('/users/addresses', addressData),
     updateAddress: (addressId, addressData) => api.put(`/users/addresses/${addressId}`, addressData),
     deleteAddress: (addressId) => api.delete(`/users/addresses/${addressId}`),
+    
+    // 聊天相关API
+    sendChatMessage: (messageData) => api.post('/chat', messageData),
+    getChatHistory: () => api.get('/chat/history'),
+    clearChatHistory: () => api.delete('/chat/clear'),
 };
 
 export const orderAPI = {
