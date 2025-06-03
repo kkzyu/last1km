@@ -78,14 +78,15 @@ def create_app():
     
     # 初始化 JWT
     jwt = JWTManager(app)
-    
-    # 注册路由蓝图
+      # 注册路由蓝图
     from routes.auth import auth_bp
     from routes.orders import orders_bp
     from routes.users import users_bp
     from routes.map import map_bp
     from routes.faq import faq_bp
     from routes.chat import chat_bp  # 导入聊天路由
+    from routes.riders import riders_bp  # 导入骑手路由
+    from routes.messages import messages_bp  # 导入消息路由
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(users_bp, url_prefix='/api/users')
@@ -93,6 +94,8 @@ def create_app():
     app.register_blueprint(map_bp, url_prefix='/api/map')
     app.register_blueprint(faq_bp, url_prefix='/api/faq')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')  # 注册聊天路由
+    app.register_blueprint(riders_bp, url_prefix='/api/riders')  # 注册骑手路由
+    app.register_blueprint(messages_bp, url_prefix='/api/messages')  # 注册消息路由
 
     @app.route('/static/uploads/<filename>')
     def uploaded_file(filename):

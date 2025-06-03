@@ -125,4 +125,21 @@ export const mapAPI = {
         api.post('/map/route', routeData),
 };
 
+// 骑手相关API
+export const riderAPI = {
+    getRidersList: () => api.post('/riders/list'),
+    getRiderDetails: (riderId) => api.post(`/riders/${riderId}`),
+    getRiderOrderHistory: (riderId) => api.post(`/riders/${riderId}/orders`),
+    likeRider: (riderId, isLiked) => api.post(`/riders/${riderId}/like`, { isLiked }),
+};
+
+// 消息相关API
+export const messageAPI = {
+    getChatList: () => api.post('/messages/list'),
+    getChatDetails: (chatId) => api.post(`/messages/${chatId}/details`),
+    sendMessage: (chatId, message) => api.post(`/messages/${chatId}/send`, { message }),
+    markChatAsRead: (chatId) => api.post(`/messages/${chatId}/mark_read`),
+    markAllChatsAsRead: () => api.post('/messages/mark_all_read'),
+};
+
 export default api;

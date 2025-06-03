@@ -44,25 +44,27 @@ const formattedTime = computed(() => {
 });
 </script>
 
-// ... existing template and script ...
 <style scoped>
-/* Unified theme colors (example, adjust as needed) */
+/* Modern Chat Bubble Design */
 :root {
-  --primary-color: #007AFF; /* Modern iOS Blue, can be used for avatar fallback bg */
-  --sender-bg: #007AFF;    /* Sender bubble background */
-  --sender-text-color: #FFFFFF; /* Text color for sender messages */
-  --receiver-bg: #EFEFEF;  /* Light grey for receiver */
-  --receiver-text-color: #1C1C1E; /* Darker text for better contrast on light grey receiver bubble */
-  --text-color-secondary: #8A8A8E; /* For timestamps on receiver, other secondary info */
-  --bubble-border-radius: 16px; /* Softer, more rounded corners */
-  --avatar-size: 36px;
+  --primary-color: #007AFF;
+  --sender-bg: linear-gradient(135deg, #007AFF 0%, #5856d6 100%);
+  --sender-text-color: #FFFFFF;
+  --receiver-bg: rgba(255, 255, 255, 0.9);
+  --receiver-text-color: #1a1a1a;
+  --text-color-secondary: rgba(26, 26, 26, 0.6);
+  --bubble-border-radius: 20px;
+  --avatar-size: 40px;
+  --bubble-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --bubble-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .chat-bubble-wrapper {
   display: flex;
-  margin-bottom: 16px;
-  max-width: 80%;
+  margin-bottom: 20px;
+  max-width: 85%;
   align-items: flex-end;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 .chat-bubble-wrapper.sender {
@@ -78,94 +80,143 @@ const formattedTime = computed(() => {
   width: var(--avatar-size);
   height: var(--avatar-size);
   border-radius: 50%;
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #5856d6 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
   flex-shrink: 0;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--bubble-shadow);
+  transition: all 0.3s ease;
+}
+
+.bubble-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: var(--bubble-shadow-hover);
 }
 
 .chat-bubble-wrapper.sender .bubble-avatar {
-  margin-left: 10px;
+  margin-left: 12px;
 }
 
 .chat-bubble-wrapper.receiver .bubble-avatar {
-  margin-right: 10px;
+  margin-right: 12px;
 }
 
 .chat-bubble {
-  padding: 10px 15px;
+  padding: 14px 18px;
   border-radius: var(--bubble-border-radius);
   position: relative;
-  background-color: var(--receiver-bg); /* Default for receiver */
-  color: var(--receiver-text-color);    /* Default text color for receiver */
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06); /* Softer, more subtle shadow */
-  min-width: 50px;
+  background: var(--receiver-bg);
+  color: var(--receiver-text-color);
+  box-shadow: var(--bubble-shadow);
+  min-width: 60px;
   word-wrap: break-word;
   white-space: pre-wrap;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.chat-bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--bubble-shadow-hover);
 }
 
 .chat-bubble.has-tail::before {
   content: "";
   position: absolute;
-  bottom: 0px;
+  bottom: 8px;
   width: 0;
   height: 0;
-  border: 7px solid transparent; /* Slightly smaller tail */
-  transform: translateY(-1px); /* Adjusted for new size and smoother look */
+  border: 8px solid transparent;
 }
 
 /* Sender bubble styling */
 .sender .chat-bubble {
-  background-color: var(--sender-bg);
-  color: var(--sender-text-color); /* Ensure text is readable on sender background */
+  background: var(--sender-bg);
+  color: var(--sender-text-color);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
 .sender .chat-bubble.has-tail::before {
-  right: -8px; /* Adjusted position for smaller tail */
-  border-left-color: var(--sender-bg);
+  right: -8px;
+  border-left-color: #007AFF;
   border-right-width: 0;
-  border-top-color: var(--sender-bg);
+  border-top-color: #007AFF;
   border-bottom-color: transparent;
 }
 
 /* Receiver bubble styling */
 .receiver .chat-bubble {
- background-color: var(--receiver-bg);
- /* Text color is var(--receiver-text-color) by default from .chat-bubble */
+  background: var(--receiver-bg);
 }
+
 .receiver .chat-bubble.has-tail::before {
-  left: -8px; /* Adjusted position for smaller tail */
-  border-right-color: var(--receiver-bg);
+  left: -8px;
+  border-right-color: rgba(255, 255, 255, 0.9);
   border-left-width: 0;
-  border-top-color: var(--receiver-bg);
+  border-top-color: rgba(255, 255, 255, 0.9);
   border-bottom-color: transparent;
 }
 
-.message-content {
-  /* Styles for the main text content area if needed */
-}
-
 .message-text {
-  margin: 0 0 5px 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  /* Color is inherited from .chat-bubble or .sender .chat-bubble */
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 500;
+  letter-spacing: -0.2px;
 }
 
 .message-time {
-  font-size: 0.7rem;
-  color: var(--text-color-secondary); /* Default for receiver */
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
   display: block;
   text-align: right;
-  margin-top: 4px;
+  margin-top: 6px;
   opacity: 0.8;
+  font-weight: 500;
 }
 
-/* Specific time color for sender to ensure readability on dark background */
+/* Enhanced time styling for sender */
 .sender .message-time {
-  color: rgba(255, 255, 255, 0.75); /* Semi-transparent white for time on sender bubble */
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Add subtle animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .chat-bubble-wrapper {
+    max-width: 90%;
+    margin-bottom: 16px;
+  }
+  
+  .chat-bubble {
+    padding: 12px 16px;
+  }
+  
+  .bubble-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .message-text {
+    font-size: 0.95rem;
+  }
 }
 </style>

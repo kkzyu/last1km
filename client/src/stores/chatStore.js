@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { nextTick } from 'vue';
+import { messageAPI } from '@/api/api.js';
 
 // Fallback for BASE_URL if not defined by Vite/environment
 const BASE_URL = import.meta.env.BASE_URL || '/';
@@ -48,9 +49,7 @@ export const useChatStore = defineStore('chat', {
     actions: {
         setCurrentChatId(chatId) {
             this.currentChatId = chatId;
-        },
-
-        async fetchChatDetails(chatId) {
+        },        async fetchChatDetails(chatId) {
             if (!chatId) {
                 this.isLoading = false;
                 this.error = "聊天ID无效。";
@@ -62,24 +61,15 @@ export const useChatStore = defineStore('chat', {
             // Reset previous chat data
             this.chatInfo = null;
             this.messages = [];
-            // this.currentChatId = chatId; // Usually set by watcher or onMounted calling setCurrentChatId
 
             try {
-                const fetchPath = 'data/messages.json'; // Relative to public folder
-                const fullFetchPath = resolveAssetPath(fetchPath);
-
-                const response = await fetch(fullFetchPath);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status} while fetching ${fullFetchPath}`);
-                }
-                const allChatsData = await response.json();
-                const currentChatData = allChatsData[chatId];
-
-                if (currentChatData) {
-                    const riderData = currentChatData.rider ? {
-                        ...currentChatData.rider,
-                        avatar: currentChatData.rider.avatar ? resolveAssetPath(currentChatData.rider.avatar) : undefined
+                const response = await messageAPI.getChatDetails(chatId);
+                const chatData = response.data; // API响应通常包装在data属性中
+                
+                if (chatData) {
+                    const riderData = chatData.rider ? {
+                        ...chatData.rider,
+                        avatar: chatData.rider.avatar ? resolveAssetPath(chatData.rider.avatar) : undefined
                     } : null;
 
                     this.chatInfo = {
@@ -87,7 +77,9 @@ export const useChatStore = defineStore('chat', {
                         rider: riderData,
                     };
 
-                    this.messages = currentChatData.messages.map(msg => ({
+                    // 确保messages存在且是数组
+                    const messages = chatData.messages || [];
+                    this.messages = messages.map(msg => ({
                         ...msg,
                         timestamp: new Date(msg.timestamp)
                     })).sort((a, b) => a.timestamp - b.timestamp);
@@ -96,14 +88,21 @@ export const useChatStore = defineStore('chat', {
                         this.simulateWelcomeMessage();
                     }
                 } else {
-                    console.error(`Chat with id ${chatId} not found in messages.json`);
+                    console.error(`Chat with id ${chatId} not found`);
                     this.error = `无法找到ID为 ${chatId} 的聊天记录。`;
                     this.chatInfo = { id: chatId, rider: null };
-                }
-            } catch (error) {
+                }            } catch (error) {
                 console.error("Failed to fetch chat details:", error);
-                this.error = `加载聊天详情失败: ${error.message}`;
-                this.chatInfo = { id: chatId, rider: null }; // Set a minimal error state
+                // 检查是否是404错误（聊天记录不存在）
+                if (error.response?.status === 404) {
+                    // 尝试创建空聊天状态，显示"暂无聊天记录"
+                    this.chatInfo = { id: chatId, rider: null };
+                    this.messages = [];
+                    this.error = null; // 不显示错误，而是显示空状态
+                } else {
+                    this.error = `加载聊天详情失败: ${error.message}`;
+                    this.chatInfo = { id: chatId, rider: null };
+                }
             } finally {
                 this.isLoading = false;
             }
@@ -118,9 +117,7 @@ export const useChatStore = defineStore('chat', {
                 timestamp: new Date(),
             };
             this.messages.push(welcomeMsg);
-        },
-
-        async sendMessage(currentUserId = 'user') {
+        },        async sendMessage(currentUserId = 'user') {
             if (!this.newMessage.trim()) return;
             if (!this.chatInfo && !this.currentChatId) {
                 console.warn("Cannot send message, no chat context.");
@@ -128,18 +125,33 @@ export const useChatStore = defineStore('chat', {
                 return;
             }
 
-            const message = {
-                id: `msg_user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                text: this.newMessage,
-                sender: currentUserId,
-                timestamp: new Date(),
-            };
-            this.messages.push(message);
-            const messageSent = this.newMessage;
+            const messageText = this.newMessage.trim();
             this.newMessage = '';
 
-            if (this.chatInfo?.rider) {
-                this.simulateReply(messageSent);
+            try {
+                // Use backend API to send message
+                const chatId = this.currentChatId || this.chatInfo.id;
+                const response = await messageAPI.sendMessage(chatId, messageText);
+                
+                if (response.data && response.data.success) {
+                    // Add the sent message to local state
+                    const message = {
+                        id: `msg_user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                        text: messageText,
+                        sender: currentUserId,
+                        timestamp: new Date(),
+                    };
+                    this.messages.push(message);
+
+                    if (this.chatInfo?.rider) {
+                        this.simulateReply(messageText);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to send message:", error);
+                this.error = `发送消息失败: ${error.message}`;
+                // Restore the message text so user can try again
+                this.newMessage = messageText;
             }
         },
 

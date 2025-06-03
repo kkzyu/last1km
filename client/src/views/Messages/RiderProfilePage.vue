@@ -46,6 +46,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { riderAPI } from '@/api/api.js';
 // Import the new/renamed components
 import RiderInfoCard from '@/components/Message/RiderInfoCard.vue';
 import RiderStatsPanel from '@/components/Message/RiderStatsPanel.vue';
@@ -91,16 +92,13 @@ async function fetchRiderData() {
   isLoading.value = true;
   error.value = null;
   try {
-    const fetchPath = 'data/riders.json';
-     const response = await fetch(`${BASE_URL}${fetchPath}`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const allRiders = await response.json();
-    const riderDataFromServer = allRiders[riderId.value];
+    const response = await riderAPI.getRiderDetails(riderId.value);
+    const riderDataFromServer = response.data?.data; // API响应结构
 
     if (riderDataFromServer) {
       rider.value = {
         ...riderDataFromServer,
-        // 1. Resolve the avatar path here
+        // Resolve the avatar path here
         avatar: riderDataFromServer.avatar ? resolveAssetPath(riderDataFromServer.avatar) : undefined
       };
       // Initialize stats if not present
@@ -109,7 +107,7 @@ async function fetchRiderData() {
       
       isLikedByCurrentUser.value = localStorage.getItem(`liked_rider_${riderId.value}`) === 'true';
     } else {
-      throw new Error(`Rider with ID ${riderId.value} not found in riders.json`);
+      throw new Error(`Rider with ID ${riderId.value} not found`);
     }
   } catch (e) {
     console.error("Failed to fetch rider data:", e);
@@ -125,18 +123,12 @@ async function fetchRiderOrderHistory() {
   isOrdersLoading.value = true;
   ordersError.value = null;
   try {
-    const fetchOrdersPath = 'data/orders.json';
-    const response = await fetch(`${BASE_URL}${fetchOrdersPath}`); 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const allOrders = await response.json();
-    if (allOrders[CURRENT_USER_ID] && allOrders[CURRENT_USER_ID][riderId.value]) {
-      riderOrderHistory.value = allOrders[CURRENT_USER_ID][riderId.value].map(order => ({
-        ...order,
-        userReview: order.userReview || null
-      }));
-    } else {
-      riderOrderHistory.value = [];
-    }
+    const response = await riderAPI.getRiderOrderHistory(riderId.value);
+    const orders = response.data?.data || []; // API响应结构
+    riderOrderHistory.value = orders.map(order => ({
+      ...order,
+      userReview: order.userReview || null
+    }));
   } catch (e) {
     console.error("Failed to fetch order history:", e);
     ordersError.value = e.message;
@@ -158,18 +150,28 @@ const contactRider = () => {
   if (!rider.value) return;
   router.push({ name: 'ChatPage', params: { chatId: `chat_${rider.value.id}` } });
 };
-const likeRider = () => {
+const likeRider = async () => {
   if (!rider.value || !rider.value.stats) return;
-  if (isLikedByCurrentUser.value) {
-    rider.value.stats.likeCount--;
-    isLikedByCurrentUser.value = false;
-    localStorage.removeItem(`liked_rider_${riderId.value}`);
-    alert(`已取消点赞 ${rider.value.name} (模拟操作)`);
-  } else {
-    rider.value.stats.likeCount++;
-    isLikedByCurrentUser.value = true;
-    localStorage.setItem(`liked_rider_${riderId.value}`, 'true');
-    alert(`已点赞 ${rider.value.name}! (模拟操作)`);
+  try {
+    const isCurrentlyLiked = isLikedByCurrentUser.value;
+    const response = await riderAPI.likeRider(riderId.value, !isCurrentlyLiked);
+    const result = response.data?.data; // API响应结构
+    
+    if (result) {
+      rider.value.stats.likeCount = result.likeCount;
+      isLikedByCurrentUser.value = result.isLiked;
+      
+      if (result.isLiked) {
+        localStorage.setItem(`liked_rider_${riderId.value}`, 'true');
+        alert(`已点赞 ${rider.value.name}!`);
+      } else {
+        localStorage.removeItem(`liked_rider_${riderId.value}`);
+        alert(`已取消点赞 ${rider.value.name}`);
+      }
+    }
+  } catch (error) {
+    console.error("点赞操作失败:", error);
+    alert("点赞操作失败，请稍后重试");
   }
 };
 const handleOrderReviewed = (reviewDetails) => {
