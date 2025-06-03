@@ -1,23 +1,27 @@
 <template>
-  <HomeHead />
-  <div class="auth-container">
-    <h2>密码登录</h2>
-    <form @submit.prevent="handleLogin"> 
-      <div class="input-group">
-        <span class="input-label">昵称</span>
-        <input type="text" v-model="username" placeholder="请输入用户名称" required> 
+  <div class="page-wrapper">
+    <div class="scrollable-content">
+      <HomeHead />
+      <div class="auth-container">
+        <h2>密码登录</h2>
+        <form @submit.prevent="handleLogin"> 
+          <div class="input-group">
+            <span class="input-label">昵称</span>
+            <input type="text" v-model="username" placeholder="请输入用户名称" required> 
+          </div>
+          <div class="input-field-only">
+            <input type="password" v-model="password" placeholder="请输入密码" required>
+          </div>
+          <p v-if="error" class="error-message">{{ error }}</p>
+          <button type="button" @click="goToRegister" class="btn btn-secondary" :disabled="loading">注册</button> 
+          <button type="submit" class="btn btn-primary" :disabled="loading">
+            {{ loading ? '登录中...' : '登录' }}
+          </button>
+        </form>
       </div>
-      <div class="input-field-only">
-        <input type="password" v-model="password" placeholder="请输入密码" required>
-      </div>
-      <p v-if="error" class="error-message">{{ error }}</p>
-      <button type="button" @click="goToRegister" class="btn btn-secondary" :disabled="loading">注册</button> 
-      <button type="submit" class="btn btn-primary" :disabled="loading">
-        {{ loading ? '登录中...' : '登录' }}
-      </button>
-    </form>
+    </div>
+    <BottomNav />
   </div>
-  <BottomNav />
 </template>
 
 <script setup>
@@ -86,6 +90,32 @@ const goToRegister = () => {
 </script>
 
 <style scoped>
+/* 页面整体包装器 */
+.page-wrapper {
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f7;
+}
+
+/* 可滚动内容区域 */
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 60px; /* 为BottomNav留出空间 */
+  
+  /* 隐藏滚动条 - Webkit浏览器 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE和Edge */
+}
+
+.scrollable-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 .auth-container {
   background-color: #ffffff;
   padding: 30px 20px;

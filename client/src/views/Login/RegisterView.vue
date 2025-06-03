@@ -1,85 +1,88 @@
 <template>
-  <HomeHead />
-  <div class="auth-container">
-    <h2>注册</h2>
-    <form @submit.prevent="handleRegister">
-      <div class="input-group">
-        <span class="input-label">昵称</span>
-        <input type="text" v-model="username" placeholder="请输入用户名称" required>
-      </div>
-      <div class="input-group">
-        <span class="input-label">手机号</span>
-        <input type="text" v-model="phoneNumber" placeholder="请输入手机号" required>
-      </div>
-      <div class="input-field-only">
-        <input 
-          type="password" 
-          v-model="password" 
-          placeholder="请输入密码" 
-          required 
-          @input="validatePasswordRealtime"
-          @focus="passwordFocused = true"
-        >
-      </div>
-      
-      <!-- 美化的密码强度提示 -->
-      <div v-if="passwordFocused || password.length > 0" class="password-strength-container">
-        <div class="strength-header">
-          <span class="strength-title">密码强度</span>
-          <div class="strength-bar">
-            <div class="strength-progress" :style="{ width: strengthPercentage + '%' }" :class="strengthClass"></div>
+  <div class="page-wrapper">
+    <div class="scrollable-content">
+      <HomeHead />
+      <div class="auth-container">
+        <h2>注册</h2>
+        <form @submit.prevent="handleRegister">
+          <div class="input-group">
+            <span class="input-label">昵称</span>
+            <input type="text" v-model="username" placeholder="请输入用户名称" required>
           </div>
-          <span class="strength-text" :class="strengthClass">{{ strengthText }}</span>
-        </div>
+          <div class="input-group">
+            <span class="input-label">手机号</span>
+            <input type="text" v-model="phoneNumber" placeholder="请输入手机号" required>
+          </div>
+          <div class="input-field-only">
+            <input 
+              type="password" 
+              v-model="password" 
+              placeholder="请输入密码" 
+              required 
+              @input="validatePasswordRealtime"
+              @focus="passwordFocused = true"
+            >
+          </div>
         
-        <div class="criteria-list">
-          <div class="criteria-row">
-            <div class="criteria-item" :class="{ 'satisfied': passwordChecks.length }">
-              <div class="criteria-icon">
-                <i class="icon" :class="passwordChecks.length ? 'icon-check' : 'icon-close'"></i>
-              </div>
-              <span class="criteria-text">长度至少为8位</span>
+        <!-- 美化的密码强度提示 -->
+        <div v-if="passwordFocused || password.length > 0" class="password-strength-container">
+          <div class="strength-header">
+            <span class="strength-title">密码强度</span>
+            <div class="strength-bar">
+              <div class="strength-progress" :style="{ width: strengthPercentage + '%' }" :class="strengthClass"></div>
             </div>
-            
-            <div class="criteria-item" :class="{ 'satisfied': passwordChecks.lowercase }">
-              <div class="criteria-icon">
-                <i class="icon" :class="passwordChecks.lowercase ? 'icon-check' : 'icon-close'"></i>
-              </div>
-              <span class="criteria-text">包含小写字母</span>
-            </div>
+            <span class="strength-text" :class="strengthClass">{{ strengthText }}</span>
           </div>
           
-          <div class="criteria-row">
-            <div class="criteria-item" :class="{ 'satisfied': passwordChecks.uppercase }">
-              <div class="criteria-icon">
-                <i class="icon" :class="passwordChecks.uppercase ? 'icon-check' : 'icon-close'"></i>
+          <div class="criteria-list">
+            <div class="criteria-row">
+              <div class="criteria-item" :class="{ 'satisfied': passwordChecks.length }">
+                <div class="criteria-icon">
+                  <i class="icon" :class="passwordChecks.length ? 'icon-check' : 'icon-close'"></i>
+                </div>
+                <span class="criteria-text">长度至少为8位</span>
               </div>
-              <span class="criteria-text">包含大写字母</span>
+              
+              <div class="criteria-item" :class="{ 'satisfied': passwordChecks.lowercase }">
+                <div class="criteria-icon">
+                  <i class="icon" :class="passwordChecks.lowercase ? 'icon-check' : 'icon-close'"></i>
+                </div>
+                <span class="criteria-text">包含小写字母</span>
+              </div>
             </div>
             
-            <div class="criteria-item" :class="{ 'satisfied': passwordChecks.digit }">
-              <div class="criteria-icon">
-                <i class="icon" :class="passwordChecks.digit ? 'icon-check' : 'icon-close'"></i>
+            <div class="criteria-row">
+              <div class="criteria-item" :class="{ 'satisfied': passwordChecks.uppercase }">
+                <div class="criteria-icon">
+                  <i class="icon" :class="passwordChecks.uppercase ? 'icon-check' : 'icon-close'"></i>
+                </div>
+                <span class="criteria-text">包含大写字母</span>
               </div>
-              <span class="criteria-text">包含数字</span>
+              
+              <div class="criteria-item" :class="{ 'satisfied': passwordChecks.digit }">
+                <div class="criteria-icon">
+                  <i class="icon" :class="passwordChecks.digit ? 'icon-check' : 'icon-close'"></i>
+                </div>
+                <span class="criteria-text">包含数字</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <div class="input-field-only">
-        <input type="password" v-model="confirmPassword" placeholder="请确认密码" required>
-      </div>
-      <p v-if="error" class="error-message">{{ error }}</p>
-      <button type="submit" class="btn btn-primary" :disabled="loading">
-        {{ loading ? '注册中...' : '注册' }}
-      </button>
-      <p class="navigation-link">
-        已有账号？<a @click="goToLogin">立即登录</a>
-      </p>
-    </form>
+        
+        <div class="input-field-only">
+          <input type="password" v-model="confirmPassword" placeholder="请确认密码" required>
+        </div>
+        <p v-if="error" class="error-message">{{ error }}</p>
+        <button type="submit" class="btn btn-primary" :disabled="loading">
+          {{ loading ? '注册中...' : '注册' }}
+        </button>        <p class="navigation-link">
+          已有账号？<a @click="goToLogin">立即登录</a>
+        </p>
+      </form>
+    </div>
+    </div>
+    <BottomNav />
   </div>
-  <BottomNav />
 </template>
 
 <script setup>
@@ -180,6 +183,32 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
+/* 页面整体包装器 */
+.page-wrapper {
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f7;
+}
+
+/* 可滚动内容区域 */
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 60px; /* 为BottomNav留出空间 */
+  
+  /* 隐藏滚动条 - Webkit浏览器 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE和Edge */
+}
+
+.scrollable-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 .auth-container {
   background-color: #ffffff;
   padding: 40px 30px;

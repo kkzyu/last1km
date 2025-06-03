@@ -116,12 +116,12 @@ const routes = [
       title: '历史订单'
     }
   },  {
-    path: '/profile/switch-account',
-    name: 'profile-switch-account',
-    component: () => import('@/views/Profile/ProfileSwitchAccount.vue'),
+    path: '/profile/account-management',
+    name: 'profile-account-management',
+    component: () => import('@/views/Profile/AccountManagement.vue'),
     meta: { 
       requiresAuth: true,
-      title: '切换账号'
+      title: '账号管理'
     }
   },
   {

@@ -17,9 +17,7 @@
           <p class="description">历史订单</p>
           <span class="icon2"><i class="fas fa-angle-right"></i></span> <!-- Removed click handler from icon -->
         </div>
-      </div>
-
-      <div class="profile-info-group"> <!-- Separate group for contact -->
+      </div>      <div class="profile-info-group"> <!-- Separate group for contact -->
         <div class="personal-info" @click="navigateTo('/profile/contact-service')"> <!-- This item does not navigate, so no top-level click handler -->
           <span class="icon1"><i class="fas fa-headphones"></i></span>
           <p class="description">联系客服</p>
@@ -27,10 +25,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Slogan container removed -->
-
-    <!-- Removed account actions -->
   </div>
   <BottomNav />
 </template>
@@ -41,7 +35,6 @@ import ProfilePortrait from '@/components/Profile/ProfilePortrait.vue';
 import BottomNav from '@/components/Bottom/BottomNav.vue';
 import { useUserStore } from '@/stores/userStore'; // 导入 user store
 import { useRouter } from 'vue-router'; // 导入 useRouter
-// import { message } from 'ant-design-vue'; // message不再在此组件中使用
 
 // const $route = useRoute() // 如果不再直接使用 $route 可以移除，或者从 vue-router 导入 useRoute
 const router = useRouter(); // 获取 router 实例
@@ -58,8 +51,6 @@ onMounted(() => {
 const navigateTo = (path) => {
   router.push(path);
 };
-
-// Removed switchToAccount and logout methods
 
 </script>
 

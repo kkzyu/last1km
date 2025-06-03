@@ -82,6 +82,17 @@ const getDisplayAvatarUrl = (storedUrl, username) => {
   if (!storedUrl || storedUrl === 'DEFAULT_AVATAR') {
     return defaultAvatarAssetUrl;
   }
+  // 如果是默认头像的静态资源路径，直接返回默认头像
+  if (typeof storedUrl === 'string' && (
+      storedUrl.includes('/src/assets/images/ProfilePortrait.jpg') || 
+      storedUrl.includes('/images/ProfilePortrait.jpg') ||
+      storedUrl.includes('localhost:3000/src/assets/') ||
+      storedUrl.includes('_plugin-vue_export') ||
+      storedUrl.startsWith('blob:') ||
+      storedUrl.startsWith('file:')
+  )) {
+    return defaultAvatarAssetUrl;
+  }
   
   // 假设 storedUrl 此时应该是一个完整的 HTTP/HTTPS URL (由 userStore 处理过)
   // 或者是一个需要进一步处理的路径 (尽管 userStore 应该已经处理了)
