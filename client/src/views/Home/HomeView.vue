@@ -226,15 +226,15 @@ const publishNewOrder = () => {
 
 <style scoped>
 .home-layout {
-  min-height: 900px;
+  min-height: 100vh;
   background-color: #f5f5f7;
   display: flex;
   flex-direction: column;
   position: relative; /* 为悬浮按钮提供定位上下文 */
+  padding-bottom: 60px; /* BottomNav高度约60px(15px*2 padding + 30px内容) */
 }
 
 .home-content {
-  /* padding-bottom: 60px; 为底部导航留出空间 */
   background-color: #f4f4f4;
   flex: 1;
   flex-direction: column;

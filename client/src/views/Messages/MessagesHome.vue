@@ -47,8 +47,9 @@ onMounted(() => {
 .messages-home {
   display: flex;
   flex-direction: column;
-  height: 850px; /* 假设 BottomNav 高度为 50px */
+  min-height: 100vh;
   background-color: #f0f2f5; /* Ant Design 风格的背景色 */
+  padding-bottom: 60px; /* BottomNav高度约60px(15px*2 padding + 30px内容) */
 }
 
 .chat-list {
@@ -61,7 +62,8 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 100px - 50px); /* 减去 Header 和 BottomNav 的大致高度 */
+  flex-grow: 1;
+  height: 50vh; /* 调整为视口高度的一半 */
 }
 
 /* 根据需要添加或调整样式 */

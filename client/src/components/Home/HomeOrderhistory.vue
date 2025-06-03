@@ -212,7 +212,7 @@ const handleOrderClick = (orderId) => {
   padding: 16px;
   background-color: var(--color-bg-container);
   min-height: 100%;
-  max-height: calc(100vh - 120px); /* 设置最大高度，减去头部和底部导航的高度 */
+  max-height: calc(100vh - 80px); /* 设置最大高度，减去头部和底部导航的高度 */
   overflow-y: auto; /* 启用垂直滚动 */
   box-sizing: border-box;
   /* 隐藏滚动条 */
@@ -241,7 +241,7 @@ const handleOrderClick = (orderId) => {
 .order-list {
   background-color: var(--color-bg-container);
   border-radius: 8px;
-  max-height: calc(100vh - 200px); /* 为订单列表设置最大高度 */
+  max-height: calc(100vh - 20px); /* 为订单列表设置最大高度 */
   overflow-y: auto; /* 启用垂直滚动 */
   /* 隐藏滚动条 */
   scrollbar-width: none; /* Firefox */

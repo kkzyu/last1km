@@ -331,7 +331,7 @@ onMounted(() => {
 
 .chat-app {
   width: 100%;
-  max-width: 400px;
+  max-width: 360px;
   height: 80vh;
   max-height: 600px;
   background-color: white;
