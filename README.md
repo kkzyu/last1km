@@ -1,6 +1,7 @@
 # ZJU Last 1km - 浙大校园速递平台
 
 一个基于 Vue 3 + Flask 的现代化校园快递代取平台，致力于解决校园内快递取件"最后一公里"的问题。为浙大学生和教职工提供便捷的快递代取服务。
+![ZJULast1Km](https://github.com/user-attachments/assets/27e1c4ea-289e-4884-ba80-b784e49f6717)
 
 
 
